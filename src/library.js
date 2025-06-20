@@ -2,6 +2,12 @@
 import { fetchCanonLore, fetchProposedLore } from './api.js';
 import { indexLore, searchLore, findRelatedSections } from './loreIndex.js';
 
+let authPromise;
+function getAuth() {
+    if (!authPromise) authPromise = import('./auth.js');
+    return authPromise;
+}
+
 export class Library {
     constructor() {
         this.elements = {
@@ -9,6 +15,7 @@ export class Library {
             loading: document.querySelector('.lore-content .loading'),
             toggleBtn: document.querySelector('.toggle-btn'),
             searchInput: document.querySelector('#searchInput'),
+            bookmarkFilter: document.querySelector('#bookmarkFilter'),
             backToTopBtn: document.querySelector('.back-to-top'),
             breadcrumbs: document.querySelector('#breadcrumbs')
         };
@@ -22,9 +29,36 @@ export class Library {
             currentChunkIndex: 0,
             selectedTag: null,
             isTyping: false,
-            bookmarks: new Set(JSON.parse(localStorage.getItem('BOOKMARKS') || '[]'))
+            showBookmarksOnly: false,
+            bookmarks: new Set()
         };
         this.sectionButtons = [];
+        this.wallet = sessionStorage.getItem('WAX_WALLET');
+        this.bookmarkKey = `A01_BOOKMARKS_${this.wallet || 'anon'}`;
+        this.loadBookmarks();
+        getAuth().then(({ onAuthChange }) => {
+            onAuthChange(wallet => {
+                this.wallet = wallet;
+                this.setBookmarkKey(wallet);
+                this.loadBookmarks();
+                if (this.elements.bookmarkFilter) this.elements.bookmarkFilter.checked = false;
+                this.state.showBookmarksOnly = false;
+                this.renderLore();
+            });
+        });
+    }
+
+    setBookmarkKey(wallet) {
+        this.bookmarkKey = `A01_BOOKMARKS_${wallet || 'anon'}`;
+    }
+
+    loadBookmarks() {
+        const data = JSON.parse(localStorage.getItem(this.bookmarkKey) || '[]');
+        this.state.bookmarks = new Set(data);
+    }
+
+    saveBookmarks() {
+        localStorage.setItem(this.bookmarkKey, JSON.stringify([...this.state.bookmarks]));
     }
 
     async init() {
@@ -50,6 +84,12 @@ export class Library {
         this.elements.toggleBtn.addEventListener('click', () => this.toggleMode());
         this.elements.searchInput.addEventListener('input', debounce(() => this.handleSearch(), 300));
         this.elements.backToTopBtn.addEventListener('click', () => this.scrollToTop());
+        if (this.elements.bookmarkFilter) {
+            this.elements.bookmarkFilter.addEventListener('change', () => {
+                this.state.showBookmarksOnly = this.elements.bookmarkFilter.checked;
+                this.handleSearch();
+            });
+        }
         document.addEventListener('keydown', (e) => this.handleKeyboardNavigation(e));
     }
 
@@ -184,8 +224,10 @@ export class Library {
         const entryDiv = document.createElement('div');
         entryDiv.classList.add('lore-entry');
         const bookmarked = this.state.bookmarks.has(sectionId);
+        if (bookmarked) entryDiv.classList.add('bookmarked');
+        const disabled = !this.wallet;
         entryDiv.innerHTML = `
-            <button class="bookmark-btn ${bookmarked ? 'active' : ''}" aria-label="Bookmark">${bookmarked ? '★' : '☆'}</button>
+            <button class="bookmark-btn ${bookmarked ? 'active' : ''} ${disabled ? 'disabled' : ''}" aria-label="Bookmark">${bookmarked ? '★' : '☆'}</button>
             <h${section.level}>${section.title}</h${section.level}>
             <div class="lore-text"></div>
             ${section.metadata.author ? `<div class="metadata">Author: ${section.metadata.author} <button class="author-btn" disabled>View</button></div>` : ''}
@@ -198,18 +240,25 @@ export class Library {
         await this.typeText(loreText, renderedChunk);
 
         const markBtn = entryDiv.querySelector('.bookmark-btn');
-        markBtn.addEventListener('click', () => {
-            if (this.state.bookmarks.has(sectionId)) {
-                this.state.bookmarks.delete(sectionId);
-                markBtn.textContent = '☆';
-                markBtn.classList.remove('active');
-            } else {
-                this.state.bookmarks.add(sectionId);
-                markBtn.textContent = '★';
-                markBtn.classList.add('active');
-            }
-            localStorage.setItem('BOOKMARKS', JSON.stringify([...this.state.bookmarks]));
-        });
+        if (disabled) {
+            markBtn.title = 'Login to save bookmarks';
+            markBtn.disabled = true;
+        } else {
+            markBtn.addEventListener('click', () => {
+                if (this.state.bookmarks.has(sectionId)) {
+                    this.state.bookmarks.delete(sectionId);
+                    markBtn.textContent = '☆';
+                    markBtn.classList.remove('active');
+                    entryDiv.classList.remove('bookmarked');
+                } else {
+                    this.state.bookmarks.add(sectionId);
+                    markBtn.textContent = '★';
+                    markBtn.classList.add('active');
+                    entryDiv.classList.add('bookmarked');
+                }
+                this.saveBookmarks();
+            });
+        }
 
         const navDiv = document.createElement('div');
         navDiv.className = 'chunk-nav';
@@ -345,9 +394,15 @@ export class Library {
 
     handleSearch() {
         const query = this.elements.searchInput.value;
-        this.state.currentSections = searchLore(this.state.index, query, this.state.selectedTag);
-        this.state.currentSectionIds = Object.keys(this.state.currentSections).filter(id => {
-            const section = this.state.currentSections[id];
+        let results = searchLore(this.state.index, query, this.state.selectedTag);
+        if (this.state.showBookmarksOnly) {
+            results = Object.fromEntries(
+                Object.entries(results).filter(([id]) => this.state.bookmarks.has(id))
+            );
+        }
+        this.state.currentSections = results;
+        this.state.currentSectionIds = Object.keys(results).filter(id => {
+            const section = results[id];
             return this.state.currentMode === 'canon'
                 ? section.source === 'canon'
                 : section.source.startsWith('proposed-');

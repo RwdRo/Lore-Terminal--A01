@@ -52,5 +52,12 @@ function vote(id, choice) {
         }
         console.log(`Voting ${choice.toUpperCase()} on proposal ${id}`);
         // Integration with blockchain signing would go here
+        const wallet = sessionStorage.getItem('WAX_WALLET');
+        if (wallet) {
+            const key = `A01_VOTES_${wallet}`;
+            const voted = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+            voted.add(id);
+            localStorage.setItem(key, JSON.stringify([...voted]));
+        }
     });
 }
