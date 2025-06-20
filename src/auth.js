@@ -6,11 +6,47 @@ async function getKit() {
     if (kit) return kit;
     const { SessionKit } = await import('@wharfkit/session');
     const { WalletPluginCloudWallet } = await import('@wharfkit/wallet-plugin-cloudwallet');
+
+    class SimpleUI {
+        constructor(requireChainSelect = false) {
+            this.requireChainSelect = requireChainSelect;
+        }
+        async login(context) {
+            return {
+                chainId: context.chains[0].id,
+                walletPluginIndex: 0,
+                permissionLevel: context.permissionLevel
+            };
+        }
+        async onError(error) { console.error('SessionKit UI error:', error); }
+        async onAccountCreate() {}
+        async onAccountCreateComplete() {}
+        async onLogin() {}
+        async onLoginComplete() {}
+        async onTransact() {}
+        async onTransactComplete() {}
+        async onSign() {}
+        async onSignComplete() {}
+        async onBroadcast() {}
+        async onBroadcastComplete() {}
+        prompt() { return { result: Promise.resolve(null), cancel: () => {} }; }
+        status() {}
+        translate(key) { return key; }
+        getTranslate() { return (key) => key; }
+        addTranslations() {}
+    }
+
     const walletPlugin = new WalletPluginCloudWallet();
     kit = new SessionKit({
         appName: 'A01 Terminal',
-        chains: [{ id: '1064487b3cd1a897c10f3fa6b05b68f29ed27b5c46e81d7b78c4f2b5ab17e7f9', url: 'https://wax.greymass.com' }],
-        ui: { requireChainSelect: false },
+        chains: [
+            {
+                id: '1064487b3cd1a897c10f3fa6b05b68f29ed27b5c46e81d7b78c4f2b5ab17e7f9',
+                url: 'https://wax.greymass.com'
+            }
+        ],
+        ui: new SimpleUI(false),
+        uiRequirements: { requiresChainSelect: false, requiresWalletSelect: false },
         walletPlugins: [walletPlugin]
     });
     return kit;

@@ -5,7 +5,7 @@ export function indexLore(canonSections, proposedContents) {
     // Index Canon Lore
     canonSections.forEach((section, idx) => {
         const sectionId = `canon-${idx}`;
-        const tags = extractTags(section.content);
+        const tags = extractTags(section.content, section.metadata);
         index[sectionId] = {
             ...section,
             sectionId: sectionId,
@@ -19,7 +19,7 @@ export function indexLore(canonSections, proposedContents) {
     proposedContents.forEach((proposal, proposalIdx) => {
         proposal.sections.forEach((section, sectionIdx) => {
             const sectionId = `proposed-${proposal.prNumber}-${sectionIdx}`;
-            const tags = extractTags(section.content);
+            const tags = extractTags(section.content, section.metadata);
             index[sectionId] = {
                 ...section,
                 sectionId: sectionId,
@@ -43,16 +43,30 @@ export function indexLore(canonSections, proposedContents) {
     return index;
 }
 
-export function extractTags(content) {
-    const words = content.toLowerCase().split(/\W+/);
-    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']);
-    const tags = words
-        .filter(word => word.length > 3 && !stopWords.has(word))
-        .reduce((acc, word) => {
-            acc[word] = (acc[word] || 0) + 1;
-            return acc;
-        }, {});
-    return Object.keys(tags).sort((a, b) => tags[b] - tags[a]).slice(0, 5);
+export function extractTags(content, metadata = {}) {
+    const stopWords = new Set([
+        'the','a','an','and','or','but','in','on','at','to','for','of','with','by',
+        'this','that','these','those','is','are','was','were','be','has','have','had','they','them'
+    ]);
+
+    const tagSet = new Set();
+
+    if (metadata.tags) {
+        const parts = String(metadata.tags)
+            .split(/[,;]+/)
+            .map(t => t.trim().toLowerCase())
+            .filter(t => t && !stopWords.has(t));
+        parts.forEach(t => tagSet.add(t));
+    }
+
+    content
+        .toLowerCase()
+        .split(/\W+/)
+        .forEach(word => {
+            if (word.length > 3 && !stopWords.has(word)) tagSet.add(word);
+        });
+
+    return Array.from(tagSet).slice(0, 5);
 }
 
 function chunkContent(content) {

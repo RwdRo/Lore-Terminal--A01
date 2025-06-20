@@ -207,6 +207,10 @@ export class Library {
         extraTags.forEach(t => extraList.appendChild(buildBtn(t)));
         if (extraTags.length) {
             extraWrap.style.display = 'block';
+            extraWrap.open = false;
+            if (extraTags.length > 20) {
+                extraWrap.querySelector('summary').textContent = 'Show Filters';
+            }
         } else if (extraWrap) {
             extraWrap.style.display = 'none';
         }
