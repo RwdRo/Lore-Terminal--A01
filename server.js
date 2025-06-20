@@ -17,6 +17,9 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 const agent = proxy ? new HttpsProxyAgent(proxy) : undefined;
 
+// Parse JSON bodies for GraphQL proxy requests
+app.use(express.json());
+
 // Serve static frontend (from Vite build output or raw public)
 app.use(express.static('public'));
 
@@ -102,6 +105,26 @@ app.get('/api/contents', async (req, res) => {
     } catch (error) {
         console.error('Error fetching content:', error);
         res.status(500).send('Error fetching content');
+    }
+});
+
+// Proxy GraphQL requests to avoid CORS issues
+app.post('/api/graphql', async (req, res) => {
+    try {
+        const response = await fetch('https://api.alienworlds.io/graphql', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(req.body),
+            agent
+        });
+        const text = await response.text();
+        res.status(response.status).type('application/json').send(text);
+    } catch (error) {
+        console.error('Error proxying GraphQL:', error);
+        res.status(500).send('Error fetching GraphQL data');
     }
 });
 

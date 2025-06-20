@@ -1,4 +1,5 @@
-export const API_URL = 'https://api.alienworlds.io/graphql';
+// Use local proxy to avoid browser CORS restrictions
+export const API_URL = '/api/graphql';
 
 // === CACHING UTILITIES ===
 function getCacheKey(query, variables) {
