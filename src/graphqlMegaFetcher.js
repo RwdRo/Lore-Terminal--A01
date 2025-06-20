@@ -1,7 +1,19 @@
 export const API_URL = 'https://api.alienworlds.io/graphql/graphql';
 
 async function graphqlRequest(query, variables = {}) {
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ query, variables })
+  });
+  const json = await response.json();
+  if (json.errors) {
+    const message = json.errors.map(e => e.message).join(', ');
+    throw new Error(message);
   }
+  return json.data;
 }
 
 export async function fetchWalletDetails(account) {
