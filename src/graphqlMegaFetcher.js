@@ -1,33 +1,65 @@
-export const API_URL = 'https://api.alienworlds.io/graphql/graphql';
+export const API_URL = 'https://api.alienworlds.io/graphql';
+
+function getCacheKey(query, variables) {
+  return 'GQL_' + btoa(JSON.stringify({ query, variables }));
+}
+
+function loadCache(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp > 60 * 60 * 1000) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function saveCache(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data }));
+  } catch {
+    /* ignore quota errors */
+  }
+}
 
 async function graphqlRequest(query, variables = {}) {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({ query, variables })
-  });
-
-  const text = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${text.slice(0, 100)}`);
-  }
-
-  let json;
+  const key = getCacheKey(query, variables);
+  const cached = loadCache(key);
   try {
-    json = JSON.parse(text);
-  } catch (e) {
-    throw new Error('Invalid JSON response: ' + text.slice(0, 100));
-  }
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ query, variables })
+    });
 
-  if (json.errors) {
-    const message = json.errors.map(e => e.message).join(', ');
-    throw new Error(message);
+    const text = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${text.slice(0, 100)}`);
+    }
+
+    if (text.trim().startsWith('<!DOCTYPE')) {
+      throw new Error('Unexpected HTML response');
+    }
+
+    const json = JSON.parse(text);
+
+    if (json.errors) {
+      const message = json.errors.map(e => e.message).join(', ');
+      throw new Error(message);
+    }
+
+    saveCache(key, json.data);
+    return json.data;
+  } catch (err) {
+    if (cached) return cached;
+    throw err;
   }
-  return json.data;
 }
 
 export async function fetchWalletDetails(account) {

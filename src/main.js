@@ -180,5 +180,6 @@ function switchPanel(panelId) {
     import('./vote.js').then(m => m.renderVoteSidebar('loreNav')).catch(()=>{})
   } else if (panelId === 'maps' || panelId === 'formatter') {
     rightbar.style.display = 'none'
+    nav.innerHTML = ''
   }
 }

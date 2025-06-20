@@ -2,6 +2,19 @@
 import { fetchCanonLore, fetchProposedLore } from './api.js';
 import { indexLore, searchLore, findRelatedSections } from './loreIndex.js';
 
+const DEFAULT_TAGS = [
+    'planets',
+    'factions',
+    'technology',
+    'history',
+    'economy',
+    'politics',
+    'species',
+    'events',
+    'culture',
+    'characters'
+];
+
 let authPromise;
 function getAuth() {
     if (!authPromise) authPromise = import('./auth.js');
@@ -179,7 +192,10 @@ export class Library {
                 tagCounts[t] = (tagCounts[t] || 0) + 1;
             });
         });
-        const sorted = Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).map(([t])=>t);
+        let sorted = Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).map(([t])=>t);
+        if (sorted.length === 0) {
+            sorted = DEFAULT_TAGS;
+        }
         const mainTags = sorted.slice(0,8);
         const extraTags = sorted.slice(8);
 

@@ -1,6 +1,7 @@
 let session = null;
 let kit = null;
 const authChangeCallbacks = [];
+const CHAIN = { id: '1064487b3cd1a897c10f3fa6b05b68f29ed27b5c46e81d7b78c4f2b5ab17e7f9', url: 'https://wax.greymass.com' };
 
 async function getKit() {
     if (kit) return kit;
@@ -9,7 +10,7 @@ async function getKit() {
     const walletPlugin = new WalletPluginCloudWallet();
     kit = new SessionKit({
         appName: 'A01 Terminal',
-        chains: [{ id: '1064487b3cd1a897c10f3fa6b05b68f29ed27b5c46e81d7b78c4f2b5ab17e7f9', url: 'https://wax.greymass.com' }],
+        chains: [CHAIN],
         ui: { requireChainSelect: false },
         walletPlugins: [walletPlugin]
     });
@@ -60,7 +61,7 @@ export function isLoggedIn() {
 export async function login() {
     try {
         const sessionKit = await getKit();
-        const result = await sessionKit.login();
+        const result = await sessionKit.login({ chain: CHAIN });
         if (!result || !result.session) throw new Error('Login failed: No session returned.');
         session = result.session;
 
@@ -94,7 +95,7 @@ export async function restoreSession() {
     try {
         const sessionKit = await getKit();
 
-        const result = await sessionKit.restore();
+        const result = await sessionKit.restore({ chain: CHAIN });
         if (result && result.session && result.session.actor) {
             session = result.session;
             const wallet = session.actor.toString();

@@ -38,8 +38,10 @@ export class Maps {
 
     const spaceView = this.container.querySelector('#spaceView');
     const scale = Math.min(this.container.clientWidth / viewWidth, this.container.clientHeight / viewHeight);
+    const offsetX = (this.container.clientWidth - viewWidth * scale) / 2;
+    const offsetY = (this.container.clientHeight - viewHeight * scale) / 2;
     spaceView.style.transformOrigin = 'top left';
-    spaceView.style.transform = `scale(${scale})`;
+    spaceView.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
 
     this.attachPlanetEvents();
   }
