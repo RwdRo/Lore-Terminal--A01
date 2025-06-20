@@ -2,6 +2,11 @@
 import { Library } from './library.js'
 import { Profile } from './profile.js'
 import { Maps } from './maps.js'
+
+let library
+let profile
+let maps
+let formatter
 let authModule = null;
 async function getAuth() {
   if (!authModule) {
@@ -113,11 +118,11 @@ async function initTerminal() {
       }
     });
   }
-  const library = new Library()
-  const profile = new Profile()
-  const maps = new Maps()
+  library = new Library()
+  profile = new Profile()
+  maps = new Maps()
   const { Formatter } = await import('./formatter.js')
-  const formatter = new Formatter()
+  formatter = new Formatter()
 
   library.init()
 
@@ -160,4 +165,20 @@ function switchPanel(panelId) {
       el.style.display = id === panelId ? 'flex' : 'none'
     }
   })
+
+  const rightbar = document.querySelector('.rightbar')
+  const nav = document.getElementById('loreNav')
+
+  if (panelId === 'content') {
+    rightbar.style.display = 'block'
+    library.updateNavPanel(nav)
+  } else if (panelId === 'profile') {
+    rightbar.style.display = 'block'
+    profile.renderSidebar('loreNav')
+  } else if (panelId === 'votes') {
+    rightbar.style.display = 'block'
+    import('./vote.js').then(m => m.renderVoteSidebar('loreNav')).catch(()=>{})
+  } else if (panelId === 'maps' || panelId === 'formatter') {
+    rightbar.style.display = 'none'
+  }
 }

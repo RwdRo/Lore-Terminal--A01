@@ -59,4 +59,22 @@ export class Profile {
       </div>
     `;
   }
+
+  async renderSidebar(elementId = 'loreNav') {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    let info = '<p>Connect wallet</p>';
+    if (this.wallet) {
+      try {
+        const data = await fetchWalletDetails(this.wallet);
+        if (data) {
+          info = `<strong>${this.wallet}</strong><br>Stake: ${data.stake}<br>Votes: ${data.votes}`;
+        }
+      } catch (err) {
+        info = '<p>Error loading wallet stats.</p>';
+        console.error('Profile sidebar error:', err);
+      }
+    }
+    el.innerHTML = info;
+  }
 }
