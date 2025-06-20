@@ -12,7 +12,10 @@ async function getAuth() {
 
 const sectionIds = ['content', 'profile', 'maps', 'votes', 'formatter']
 
-waitForTerminalAndStart()
+// Wait for DOM to ensure the boot elements exist
+document.addEventListener('DOMContentLoaded', () => {
+  waitForTerminalAndStart()
+})
 
 async function waitForTerminalAndStart() {
   const maxTries = 20
