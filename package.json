@@ -1,0 +1,23 @@
+{
+  "name": "a-01-canon-terminal",
+  "version": "2.0.0",
+  "description": "Alien Worlds Lore Terminal (with WharfKit Login + Vite)",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"node server.js\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@wharfkit/session": "^1.2.10",
+    "@wharfkit/wallet-plugin-cloudwallet": "^1.0.3",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "vite": "^6.3.5"
+  }
+}
