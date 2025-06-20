@@ -2,6 +2,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -11,8 +12,10 @@ const __dirname = dirname(__filename);
 
 dotenv.config();
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 5174;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
+const agent = proxy ? new HttpsProxyAgent(proxy) : undefined;
 
 // Serve static frontend (from Vite build output or raw public)
 app.use(express.static('public'));
@@ -31,7 +34,8 @@ app.get('/api/canon', async (req, res) => {
         }
 
         const response = await fetch('https://api.github.com/repos/Alien-Worlds/the-lore/contents/README.md?ref=main', {
-            headers
+            headers,
+            agent
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const text = await response.text();
@@ -49,7 +53,8 @@ app.get('/api/proposed', async (req, res) => {
                 'Accept': 'application/vnd.github+json',
                 'Authorization': `Bearer ${GITHUB_TOKEN}`,
                 'User-Agent': 'Alien-Worlds-Lore-App'
-            }
+            },
+            agent
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const pulls = await response.json();
@@ -68,7 +73,8 @@ app.get('/api/pulls/:number/files', async (req, res) => {
                 'Accept': 'application/vnd.github+json',
                 'Authorization': `Bearer ${GITHUB_TOKEN}`,
                 'User-Agent': 'Alien-Worlds-Lore-App'
-            }
+            },
+            agent
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const files = await response.json();
@@ -87,7 +93,8 @@ app.get('/api/contents', async (req, res) => {
                 'Accept': 'application/vnd.github.raw+json',
                 'Authorization': `Bearer ${GITHUB_TOKEN}`,
                 'User-Agent': 'Alien-Worlds-Lore-App'
-            }
+            },
+            agent
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const content = await response.text();
