@@ -1,8 +1,13 @@
 // server.js
-const express = require('express');
-const dotenv = require('dotenv');
-const fetch = require('node-fetch');
-const path = require('path');
+import express from 'express';
+import dotenv from 'dotenv';
+import fetch from 'node-fetch';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 dotenv.config();
 const app = express();
@@ -94,7 +99,7 @@ app.get('/api/contents', async (req, res) => {
 });
 
 // SPA fallback — always serve index.html
-app.get('*', (req, res) => {
+app.use((req, res) => {
     res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
 });
 
