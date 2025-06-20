@@ -2,7 +2,6 @@ export const API_URL = 'https://api.alienworlds.io/graphql/graphql';
 
 async function graphqlRequest(query, variables = {}) {
   }
-}
 
 export async function fetchWalletDetails(account) {
   const query = `query($account:String!){ wallet_details(account:$account){ account stake votes last_vote_time } }`;
