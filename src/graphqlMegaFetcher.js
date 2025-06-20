@@ -1,13 +1,16 @@
 export const API_URL = 'https://api.alienworlds.io/graphql';
 
-
+// === CACHING UTILITIES ===
+function getCacheKey(query, variables) {
+  return `gql:${query}-${JSON.stringify(variables)}`;
+}
 
 function loadCache(key) {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (Date.now() - parsed.timestamp > 60 * 60 * 1000) return null;
+    if (Date.now() - parsed.timestamp > 60 * 60 * 1000) return null; // 1 hour expiry
     return parsed.data;
   } catch {
     return null;
@@ -16,12 +19,20 @@ function loadCache(key) {
 
 function saveCache(key, data) {
   try {
+    localStorage.setItem(key, JSON.stringify({
+      timestamp: Date.now(),
+      data
+    }));
+  } catch (e) {
+    console.warn('[GraphQL] Cache save failed:', e);
   }
 }
 
+// === MAIN FETCHER ===
 async function graphqlRequest(query, variables = {}) {
   const key = getCacheKey(query, variables);
   const cached = loadCache(key);
+
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -51,12 +62,15 @@ async function graphqlRequest(query, variables = {}) {
 
     saveCache(key, json.data);
     return json.data;
+
   } catch (err) {
     if (cached) return cached;
+    console.error('[GraphQL] Request failed:', err);
     throw err;
   }
 }
 
+// === CUSTOM FETCHERS ===
 export async function fetchWalletDetails(account) {
   const query = `
     query($account:String!){
@@ -74,7 +88,7 @@ export async function fetchWalletDetails(account) {
 export async function fetchPlanetDetails() {
   const query = `
     query{
-      planet_details{
+      planet_details {
         name
         population
         reward_pool
