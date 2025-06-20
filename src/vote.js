@@ -26,11 +26,14 @@ export async function renderVoteSidebar(elementId = 'loreNav') {
     try {
         const data = await fetchDaoInfo();
         const proposals = data?.TokeLore?.proposals || [];
-        if (!proposals.length) {
-            el.innerHTML = '<p>No active proposals</p>';
+        const wallet = sessionStorage.getItem('WAX_WALLET');
+        const voted = wallet ? new Set(JSON.parse(localStorage.getItem(`A01_VOTES_${wallet}`) || '[]')) : new Set();
+        const votedProposals = proposals.filter(p => voted.has(p.id));
+        if (!votedProposals.length) {
+            el.innerHTML = '<p>No voted proposals</p>';
             return;
         }
-        el.innerHTML = '<ul>' + proposals.map(p => `<li>${p.title}</li>`).join('') + '</ul>';
+        el.innerHTML = '<ul>' + votedProposals.map(p => `<li>${p.title}</li>`).join('') + '</ul>';
     } catch (err) {
         el.innerHTML = '<p>Error loading proposals</p>';
         console.error('Vote sidebar error:', err);

@@ -7,11 +7,39 @@ async function getKit() {
     if (kit) return kit;
     const { SessionKit } = await import('@wharfkit/session');
     const { WalletPluginCloudWallet } = await import('@wharfkit/wallet-plugin-cloudwallet');
+
+    class SimpleUI {
+        constructor(requireChainSelect = false) {
+            this.requireChainSelect = requireChainSelect;
+        }
+        async login(context) {
+            return {
+                chainId: context.chains[0].id,
+                walletPluginIndex: 0,
+                permissionLevel: context.permissionLevel
+            };
+        }
+        async onError(error) { console.error('SessionKit UI error:', error); }
+        async onAccountCreate() {}
+        async onAccountCreateComplete() {}
+        async onLogin() {}
+        async onLoginComplete() {}
+        async onTransact() {}
+        async onTransactComplete() {}
+        async onSign() {}
+        async onSignComplete() {}
+        async onBroadcast() {}
+        async onBroadcastComplete() {}
+        prompt() { return { result: Promise.resolve(null), cancel: () => {} }; }
+        status() {}
+        translate(key) { return key; }
+        getTranslate() { return (key) => key; }
+        addTranslations() {}
+    }
+
     const walletPlugin = new WalletPluginCloudWallet();
     kit = new SessionKit({
         appName: 'A01 Terminal',
-        chains: [CHAIN],
-        ui: { requireChainSelect: false },
         walletPlugins: [walletPlugin]
     });
     return kit;

@@ -1,8 +1,6 @@
 export const API_URL = 'https://api.alienworlds.io/graphql';
 
-function getCacheKey(query, variables) {
-  return 'GQL_' + btoa(JSON.stringify({ query, variables }));
-}
+
 
 function loadCache(key) {
   try {
@@ -18,9 +16,6 @@ function loadCache(key) {
 
 function saveCache(key, data) {
   try {
-    localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data }));
-  } catch {
-    /* ignore quota errors */
   }
 }
 
