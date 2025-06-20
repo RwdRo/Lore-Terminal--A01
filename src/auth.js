@@ -1,5 +1,20 @@
 let session = null;
+let kit = null;
 const authChangeCallbacks = [];
+
+async function getKit() {
+    if (kit) return kit;
+    const { SessionKit } = await import('@wharfkit/session');
+    const { WalletPluginCloudWallet } = await import('@wharfkit/wallet-plugin-cloudwallet');
+    const walletPlugin = new WalletPluginCloudWallet();
+    kit = new SessionKit({
+        appName: 'A01 Terminal',
+        chains: [{ id: '1064487b3cd1a897', url: 'https://wax.greymass.com' }],
+        ui: { requireChainSelect: false },
+        walletPlugins: [walletPlugin]
+    });
+    return kit;
+}
 
 function debounce(func, wait) {
     let timeout = null;
@@ -44,25 +59,8 @@ export function isLoggedIn() {
 
 export async function login() {
     try {
-        const { SessionKit } = await import('@wharfkit/session');
-        const { WalletPluginCloudWallet } = await import('@wharfkit/wallet-plugin-cloudwallet');
-
-        const walletPlugin = new WalletPluginCloudWallet();
-
-        const sessionKit = new SessionKit({
-            appName: 'A01-Canon-Debug',
-            chains: [{
-                id: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
-                url: 'https://wax.greymass.com',
-                fallbackUrls: [
-                    'https://api.waxsweden.org',
-                    'https://wax.eosrio.io',
-                ],
-            }],
-            walletPlugins: [walletPlugin],
-        });
-
-        const result = await sessionKit.login({ restoreSession: false });
+        const sessionKit = await getKit();
+        const result = await sessionKit.login();
         if (!result || !result.session) throw new Error('Login failed: No session returned.');
         session = result.session;
 
@@ -79,9 +77,8 @@ export async function login() {
 
 export async function logout() {
     try {
-        const { SessionKit } = await import('@wharfkit/session');
+        const sessionKit = await getKit();
         if (session) {
-            const sessionKit = new SessionKit({}); // minimal just to call logout
             await sessionKit.logout(session);
             session = null;
         }
@@ -95,19 +92,7 @@ export async function logout() {
 
 export async function restoreSession() {
     try {
-        const { SessionKit } = await import('@wharfkit/session');
-        const { WalletPluginCloudWallet } = await import('@wharfkit/wallet-plugin-cloudwallet');
-
-        const walletPlugin = new WalletPluginCloudWallet();
-
-        const sessionKit = new SessionKit({
-            appName: 'A01-Canon-Debug',
-            chains: [{
-                id: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
-                url: 'https://wax.greymass.com'
-            }],
-            walletPlugins: [walletPlugin],
-        });
+        const sessionKit = await getKit();
 
         const result = await sessionKit.restore();
         if (result && result.session && result.session.actor) {

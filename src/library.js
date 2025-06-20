@@ -61,6 +61,27 @@ export class Library {
         nav.innerHTML = '';
         this.sectionButtons = [];
 
+        if (this.state.currentMode === 'proposed') {
+            this.state.loreData.proposed.forEach((pr) => {
+                const button = document.createElement('button');
+                button.textContent = pr.title;
+                button.className = 'nav-heading';
+                button.dataset.pr = pr.prNumber;
+                nav.appendChild(button);
+                this.sectionButtons.push(button);
+                button.addEventListener('click', () => {
+                    const targetId = this.state.currentSectionIds.find(id => id.startsWith(`proposed-${pr.prNumber}`));
+                    if (targetId) {
+                        this.state.currentSectionIndex = this.state.currentSectionIds.indexOf(targetId);
+                        this.state.currentChunkIndex = 0;
+                        this.renderLore();
+                    }
+                });
+            });
+            this.updateActiveButton();
+            return;
+        }
+
         this.state.currentSectionIds.forEach((sectionId, index) => {
             const section = this.state.currentSections[sectionId];
             const button = document.createElement('button');
@@ -108,11 +129,21 @@ export class Library {
 
     renderTagList() {
         const tagList = document.getElementById('tagList');
+        const extraList = document.getElementById('tagExtra');
+        const extraWrap = document.getElementById('extraTags');
         if (!tagList) return;
-        const tags = new Set();
-        Object.values(this.state.index).forEach(sec => sec.tags.forEach(t => tags.add(t)));
-        tagList.innerHTML = '';
-        [...tags].slice(0, 30).forEach(tag => {
+
+        const tagCounts = {};
+        Object.values(this.state.index).forEach(sec => {
+            sec.tags.forEach(t => {
+                tagCounts[t] = (tagCounts[t] || 0) + 1;
+            });
+        });
+        const sorted = Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).map(([t])=>t);
+        const mainTags = sorted.slice(0,8);
+        const extraTags = sorted.slice(8);
+
+        const buildBtn = tag => {
             const btn = document.createElement('button');
             btn.textContent = tag;
             if (this.state.selectedTag === tag) btn.classList.add('active');
@@ -122,13 +153,23 @@ export class Library {
                     btn.classList.remove('active');
                 } else {
                     this.state.selectedTag = tag;
-                    tagList.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('#tagList button, #tagExtra button').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                 }
                 this.handleSearch();
             });
-            tagList.appendChild(btn);
-        });
+            return btn;
+        };
+
+        tagList.innerHTML = '';
+        extraList.innerHTML = '';
+        mainTags.forEach(t => tagList.appendChild(buildBtn(t)));
+        extraTags.forEach(t => extraList.appendChild(buildBtn(t)));
+        if (extraTags.length) {
+            extraWrap.style.display = 'block';
+        } else if (extraWrap) {
+            extraWrap.style.display = 'none';
+        }
     }
 
     async typeText(element, text) {
