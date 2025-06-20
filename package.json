@@ -14,6 +14,7 @@
     "@wharfkit/wallet-plugin-cloudwallet": "^1.0.3",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
+    "https-proxy-agent": "^7.0.6",
     "node-fetch": "^2.7.0"
   },
   "devDependencies": {
