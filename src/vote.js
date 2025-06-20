@@ -1,6 +1,10 @@
 // vote.js
 import { fetchDaoInfo } from './graphqlMegaFetcher.js';
-import { isLoggedIn } from './auth.js';
+let authPromise;
+function getAuth() {
+    if (!authPromise) authPromise = import('./auth.js');
+    return authPromise;
+}
 
 export async function initVotes() {
     const panel = document.getElementById('votePanel');
@@ -41,10 +45,12 @@ function renderVotes(container, proposals) {
 }
 
 function vote(id, choice) {
-    if (!isLoggedIn()) {
-        alert('Connect your wallet to vote.');
-        return;
-    }
-    console.log(`Voting ${choice.toUpperCase()} on proposal ${id}`);
-    // Integration with blockchain signing would go here
+    getAuth().then(({ isLoggedIn }) => {
+        if (!isLoggedIn()) {
+            alert('Connect your wallet to vote.');
+            return;
+        }
+        console.log(`Voting ${choice.toUpperCase()} on proposal ${id}`);
+        // Integration with blockchain signing would go here
+    });
 }

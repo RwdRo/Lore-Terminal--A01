@@ -3,7 +3,10 @@ export const API_URL = 'https://api.alienworlds.io/graphql/graphql';
 async function graphqlRequest(query, variables = {}) {
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
     body: JSON.stringify({ query, variables })
   });
   if (!res.ok) {

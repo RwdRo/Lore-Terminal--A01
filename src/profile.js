@@ -1,16 +1,22 @@
 // profile.js
 import { fetchWalletDetails } from './graphqlMegaFetcher.js';
-import { onAuthChange } from './auth.js';
+let authLoaded = null;
+async function loadAuth() {
+  if (!authLoaded) authLoaded = await import('./auth.js');
+  return authLoaded;
+}
 
 export class Profile {
   constructor() {
     this.container = document.getElementById('profile');
     this.wallet = null;
-    onAuthChange((wallet) => {
-      this.wallet = wallet;
-      if (this.container.style.display !== 'none') {
-        this.renderProfile();
-      }
+    loadAuth().then(({ onAuthChange }) => {
+      onAuthChange((wallet) => {
+        this.wallet = wallet;
+        if (this.container.style.display !== 'none') {
+          this.renderProfile();
+        }
+      });
     });
   }
 

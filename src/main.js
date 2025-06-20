@@ -2,9 +2,15 @@
 import { Library } from './library.js'
 import { Profile } from './profile.js'
 import { Maps } from './maps.js'
-import { login, logout, restoreSession, onAuthChange, isLoggedIn } from "./auth.js";
+let authModule = null;
+async function getAuth() {
+  if (!authModule) {
+    authModule = await import('./auth.js');
+  }
+  return authModule;
+}
 
-const sectionIds = ['content', 'profile', 'maps', 'votes']
+const sectionIds = ['content', 'profile', 'maps', 'votes', 'formatter']
 
 waitForTerminalAndStart()
 
@@ -89,11 +95,12 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-function initTerminal() {
-  restoreSession();
+async function initTerminal() {
+  getAuth().then(m => m.restoreSession());
   const connectBtn = document.getElementById("connectWalletBtn");
   if (connectBtn) {
     connectBtn.addEventListener("click", async () => {
+      const { login, logout, isLoggedIn } = await getAuth();
       if (isLoggedIn()) {
         await logout();
       } else {
@@ -106,6 +113,8 @@ function initTerminal() {
   const library = new Library()
   const profile = new Profile()
   const maps = new Maps()
+  const { Formatter } = await import('./formatter.js')
+  const formatter = new Formatter()
 
   library.init()
 
@@ -129,6 +138,8 @@ function initTerminal() {
           .catch(err => {
             console.error('Failed to load vote module:', err)
           })
+      } else if (targetId === 'formatter') {
+        formatter.init()
       }
 
       sidebarBtns.forEach(b => b.classList.remove('active'))
