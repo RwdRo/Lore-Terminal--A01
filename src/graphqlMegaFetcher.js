@@ -4,11 +4,25 @@ async function graphqlRequest(query, variables = {}) {
   const response = await fetch(API_URL, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     },
     body: JSON.stringify({ query, variables })
   });
-  const json = await response.json();
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${text.slice(0, 100)}`);
+  }
+
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    throw new Error('Invalid JSON response: ' + text.slice(0, 100));
+  }
+
   if (json.errors) {
     const message = json.errors.map(e => e.message).join(', ');
     throw new Error(message);
@@ -17,23 +31,54 @@ async function graphqlRequest(query, variables = {}) {
 }
 
 export async function fetchWalletDetails(account) {
-  const query = `query($account:String!){ wallet_details(account:$account){ account stake votes last_vote_time } }`;
-  const response = await graphqlRequest(query, { account });
-  return response.data?.wallet_details;
+  const query = `
+    query($account:String!){
+      wallet_details(account:$account){
+        account
+        stake
+        votes
+        last_vote_time
+      }
+    }`;
+  const data = await graphqlRequest(query, { account });
+  return data?.wallet_details;
 }
 
 export async function fetchPlanetDetails() {
-  const query = `{ planet_details { name population reward_pool active_users } }`;
-  const response = await graphqlRequest(query);
-  const planetDetails = response?.data?.planet_details?.[0];
+  const query = `
+    query{
+      planet_details{
+        name
+        population
+        reward_pool
+        active_users
+      }
+    }`;
+  const data = await graphqlRequest(query);
+  const planetDetails = data?.planet_details?.[0];
   if (!planetDetails) throw new Error('No data received from planet_details');
-  return response.data.planet_details;
+  return data.planet_details;
 }
 
 export async function fetchDaoInfo() {
-  const query = `query{ dao_wallet_details { name token_balance } TokeLore { proposals { id title status yes_votes no_votes } } }`;
-  const response = await graphqlRequest(query);
-  return response.data;
+  const query = `
+    query{
+      dao_wallet_details {
+        name
+        token_balance
+      }
+      TokeLore {
+        proposals {
+          id
+          title
+          status
+          yes_votes
+          no_votes
+        }
+      }
+    }`;
+  const data = await graphqlRequest(query);
+  return data;
 }
 
 export { graphqlRequest };
