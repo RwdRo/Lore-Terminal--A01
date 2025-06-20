@@ -16,6 +16,11 @@ export default defineConfig({
         target: 'http://localhost:5174',
         changeOrigin: true,
         secure: false
+      },
+      '/aw-graphql': {
+        target: 'https://api.alienworlds.io/graphql',
+        changeOrigin: true,
+        secure: false
       }
     }
   }

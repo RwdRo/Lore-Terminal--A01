@@ -76,7 +76,7 @@ export const PLANET_DATA = {
   },
 
   Veles: {
-    orbitCoords: [880, 360],
+    orbitCoords: [830, 340],
     short: [
       "Archive World",
       "AI Vaults",
@@ -95,7 +95,7 @@ export const PLANET_DATA = {
   },
 
   Neri: {
-    orbitCoords: [400, 500],
+    orbitCoords: [420, 480],
     short: [
       "Oceanic Depths",
       "Hidden Factions",
