@@ -1,5 +1,6 @@
 // maps.js
 import { PLANET_DATA } from './planet-data.js';
+import { fetchPlanetDetails } from './graphqlMegaFetcher.js';
 
 export class Maps {
   constructor() {
@@ -9,7 +10,17 @@ export class Maps {
     };
   }
 
-  init() {
+  async init() {
+    try {
+      const stats = await fetchPlanetDetails();
+      stats.forEach(p => {
+        if (PLANET_DATA[p.name]) {
+          PLANET_DATA[p.name].stats = { population: p.population, reward_pool: p.reward_pool, active_users: p.active_users };
+        }
+      });
+    } catch(e) {
+      console.error("Planet stats", e);
+    }
     this.renderSpaceView();
   }
 
@@ -17,7 +28,6 @@ export class Maps {
   renderSpaceView() {
     this.container.innerHTML = `
       <div id="spaceView" class="map-space">
-        <img src="/assets/orbit-bg.png" alt="Planetary Orbit Map" class="orbit-bg" />
         ${this.renderPlanets()}
         <div id="planetTooltip" class="planet-tooltip" hidden></div>
       </div>
@@ -35,7 +45,7 @@ export class Maps {
           data-planet="${name}" 
           style="left:${x}px; top:${y}px;"
         >
-          <img src="/assets/icon-${name.toLowerCase()}.png" alt="${name}" />
+          <img src="/assets/planet-${name.toLowerCase()}.png" alt="${name}" />
         </div>
       `;
     }).join('');
@@ -89,6 +99,9 @@ export class Maps {
               <tr><td>Atmosphere:</td><td>${p.atmosphere}</td></tr>
               <tr><td>Resources:</td><td>${p.resources}</td></tr>
               <tr><td>Unique:</td><td>${p.unique}</td></tr>
+              <tr><td>Population:</td><td>${p.stats?.population ?? "N/A"}</td></tr>
+              <tr><td>Reward Pool:</td><td>${p.stats?.reward_pool ?? "N/A"}</td></tr>
+              <tr><td>Active Users:</td><td>${p.stats?.active_users ?? "N/A"}</td></tr>
             </table>
 
             <div class="planet-actions">

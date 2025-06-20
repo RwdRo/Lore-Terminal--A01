@@ -2,6 +2,7 @@
 import { Library } from './library.js'
 import { Profile } from './profile.js'
 import { Maps } from './maps.js'
+import { login, logout, restoreSession, onAuthChange, isLoggedIn } from "./auth.js";
 
 const sectionIds = ['content', 'profile', 'maps', 'votes']
 
@@ -89,6 +90,19 @@ function wait(ms) {
 }
 
 function initTerminal() {
+  restoreSession();
+  const connectBtn = document.getElementById("connectWalletBtn");
+  if (connectBtn) {
+    connectBtn.addEventListener("click", async () => {
+      if (isLoggedIn()) {
+        await logout();
+      } else {
+        try {
+          await login();
+        } catch(e){ console.error(e); }
+      }
+    });
+  }
   const library = new Library()
   const profile = new Profile()
   const maps = new Maps()

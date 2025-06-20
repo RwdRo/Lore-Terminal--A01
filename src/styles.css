@@ -83,6 +83,7 @@ html, body {
   height: auto;
 }
 .header {
+  position: relative;
   padding: 0.5vw;
   border-bottom: 2px solid #FF9E42;
 }
@@ -92,7 +93,20 @@ html, body {
   text-transform: uppercase;
   text-align: center;
 }
-
+.connect-btn {
+  position: absolute;
+  right: 1vw;
+  top: 0.2vw;
+  background: #FF9E42;
+  color: #1A1410;
+  border: none;
+  padding: 0.3vw 0.8vw;
+  font-size: 1vw;
+  cursor: pointer;
+}
+.connect-btn:hover {
+  background: #FFBF80;
+}
 /* === MAIN PANEL LAYOUT === */
 .main {
   flex: 1;
