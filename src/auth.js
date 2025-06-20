@@ -16,7 +16,15 @@ const dispatchAuthChange = debounce((wallet) => {
 
 function updateLoginUI(wallet, elementId = 'connectWalletBtn') {
     const btn = document.getElementById(elementId);
-    if (!btn) return;
+    if (!btn) {
+        document.addEventListener('DOMContentLoaded', () => {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.textContent = wallet ? `🔓 ${wallet}` : '🔐 Connect Wallet';
+            }
+        });
+        return;
+    }
     btn.textContent = wallet ? `🔓 ${wallet}` : '🔐 Connect Wallet';
 }
 
@@ -36,8 +44,8 @@ export function isLoggedIn() {
 
 export async function login() {
     try {
-        const { SessionKit } = await import('https://cdn.skypack.dev/@wharfkit/session');
-        const { WalletPluginCloudWallet } = await import('https://cdn.skypack.dev/@wharfkit/wallet-plugin-cloudwallet');
+        const { SessionKit } = await import('@wharfkit/session');
+        const { WalletPluginCloudWallet } = await import('@wharfkit/wallet-plugin-cloudwallet');
 
         const walletPlugin = new WalletPluginCloudWallet();
 
@@ -71,7 +79,7 @@ export async function login() {
 
 export async function logout() {
     try {
-        const { SessionKit } = await import('https://cdn.skypack.dev/@wharfkit/session');
+        const { SessionKit } = await import('@wharfkit/session');
         if (session) {
             const sessionKit = new SessionKit({}); // minimal just to call logout
             await sessionKit.logout(session);
@@ -87,8 +95,8 @@ export async function logout() {
 
 export async function restoreSession() {
     try {
-        const { SessionKit } = await import('https://cdn.skypack.dev/@wharfkit/session');
-        const { WalletPluginCloudWallet } = await import('https://cdn.skypack.dev/@wharfkit/wallet-plugin-cloudwallet');
+        const { SessionKit } = await import('@wharfkit/session');
+        const { WalletPluginCloudWallet } = await import('@wharfkit/wallet-plugin-cloudwallet');
 
         const walletPlugin = new WalletPluginCloudWallet();
 
