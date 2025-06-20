@@ -1,14 +1,19 @@
 export const API_URL = 'https://api.alienworlds.io/graphql/graphql';
 
 async function graphqlRequest(query, variables = {}) {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({ query, variables })
-  });
+  let response;
+  try {
+    response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ query, variables })
+    });
+  } catch (err) {
+    throw new Error('Network error: ' + err.message);
+  }
 
   const text = await response.text();
 
@@ -20,7 +25,8 @@ async function graphqlRequest(query, variables = {}) {
   try {
     json = JSON.parse(text);
   } catch (e) {
-    throw new Error('Invalid JSON response: ' + text.slice(0, 100));
+    console.error('Non-JSON response:', text);
+    throw new Error('Invalid JSON response');
   }
 
   if (json.errors) {

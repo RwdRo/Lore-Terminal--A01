@@ -435,7 +435,8 @@ html, body {
 }
 .planet-icon img,
 .planet-img {
-  filter: grayscale(1) brightness(1.15) hue-rotate(35deg) saturate(140%);
+  width: 90%;
+  filter: hue-rotate(30deg) saturate(3);
 }
 .planet {
   position: absolute;
