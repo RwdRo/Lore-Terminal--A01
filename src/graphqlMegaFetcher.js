@@ -1,20 +1,38 @@
 export const API_URL = 'https://api.alienworlds.io/graphql/graphql';
 
 async function graphqlRequest(query, variables = {}) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, variables })
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables })
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      console.error('[GraphQL] Request failed:', res.status, text);
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      console.error('[GraphQL] Failed parsing response:', text);
+      throw e;
+    }
+
+    if (json.errors) {
+      console.error('[GraphQL] Errors:', json.errors);
+      const message = json.errors.map(e => e.message).join('; ');
+      throw new Error(message);
+    }
+
+    return json.data;
+  } catch (error) {
+    console.error('[GraphQL] Error fetching data:', error);
+    throw error;
   }
-  const json = await res.json();
-  if (json.errors) {
-    const message = json.errors.map(e => e.message).join('; ');
-    throw new Error(message);
-  }
-  return json.data;
 }
 
 export async function fetchWalletDetails(account) {
