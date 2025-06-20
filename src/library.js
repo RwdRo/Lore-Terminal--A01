@@ -21,7 +21,8 @@ export class Library {
             currentSectionIndex: 0,
             currentChunkIndex: 0,
             selectedTag: null,
-            isTyping: false
+            isTyping: false,
+            bookmarks: new Set(JSON.parse(localStorage.getItem('BOOKMARKS') || '[]'))
         };
         this.sectionButtons = [];
     }
@@ -38,6 +39,7 @@ export class Library {
             this.state.currentSectionIds = Object.keys(this.state.index).filter(id => this.state.index[id].source === 'canon');
 
             this.setupNavPanel();
+            this.renderTagList();
             await this.renderLore();
         } catch (error) {
             this.elements.loreContent.innerHTML = `<div class="error">Error loading lore: ${error.message}. Please try again later.</div>`;
@@ -104,6 +106,31 @@ export class Library {
         }
     }
 
+    renderTagList() {
+        const tagList = document.getElementById('tagList');
+        if (!tagList) return;
+        const tags = new Set();
+        Object.values(this.state.index).forEach(sec => sec.tags.forEach(t => tags.add(t)));
+        tagList.innerHTML = '';
+        [...tags].slice(0, 30).forEach(tag => {
+            const btn = document.createElement('button');
+            btn.textContent = tag;
+            if (this.state.selectedTag === tag) btn.classList.add('active');
+            btn.addEventListener('click', () => {
+                if (this.state.selectedTag === tag) {
+                    this.state.selectedTag = null;
+                    btn.classList.remove('active');
+                } else {
+                    this.state.selectedTag = tag;
+                    tagList.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+                this.handleSearch();
+            });
+            tagList.appendChild(btn);
+        });
+    }
+
     async typeText(element, text) {
         element.innerHTML = '';
         element.classList.add('typing');
@@ -156,10 +183,12 @@ export class Library {
         const renderedChunk = this.renderMarkdown(chunk);
         const entryDiv = document.createElement('div');
         entryDiv.classList.add('lore-entry');
+        const bookmarked = this.state.bookmarks.has(sectionId);
         entryDiv.innerHTML = `
+            <button class="bookmark-btn ${bookmarked ? 'active' : ''}" aria-label="Bookmark">${bookmarked ? '★' : '☆'}</button>
             <h${section.level}>${section.title}</h${section.level}>
             <div class="lore-text"></div>
-            ${section.metadata.author ? `<div class="metadata">Author: ${section.metadata.author}</div>` : ''}
+            ${section.metadata.author ? `<div class="metadata">Author: ${section.metadata.author} <button class="author-btn" disabled>View</button></div>` : ''}
             ${section.metadata.date ? `<div class="metadata">Date: ${section.metadata.date}</div>` : ''}
             ${section.metadata.prTitle ? `<div class="metadata">PR: ${section.metadata.prTitle} (#${section.metadata.prNumber})</div>` : ''}
         `;
@@ -167,6 +196,20 @@ export class Library {
 
         const loreText = entryDiv.querySelector('.lore-text');
         await this.typeText(loreText, renderedChunk);
+
+        const markBtn = entryDiv.querySelector('.bookmark-btn');
+        markBtn.addEventListener('click', () => {
+            if (this.state.bookmarks.has(sectionId)) {
+                this.state.bookmarks.delete(sectionId);
+                markBtn.textContent = '☆';
+                markBtn.classList.remove('active');
+            } else {
+                this.state.bookmarks.add(sectionId);
+                markBtn.textContent = '★';
+                markBtn.classList.add('active');
+            }
+            localStorage.setItem('BOOKMARKS', JSON.stringify([...this.state.bookmarks]));
+        });
 
         const navDiv = document.createElement('div');
         navDiv.className = 'chunk-nav';
@@ -204,6 +247,11 @@ export class Library {
                 });
             });
         }
+
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'comments-placeholder';
+        commentDiv.innerHTML = '<em>Comment threads coming soon...</em>';
+        this.elements.loreContent.appendChild(commentDiv);
 
         navDiv.querySelector('.prev-btn').addEventListener('click', () => this.showPreviousChunk());
         navDiv.querySelector('.next-btn').addEventListener('click', () => this.showNextChunk());
@@ -291,6 +339,7 @@ export class Library {
 
         this.handleSearch();
         this.updateNavPanel(document.querySelector('#loreNav'));
+        this.renderTagList();
         this.renderLore();
     }
 
@@ -307,6 +356,7 @@ export class Library {
         this.state.currentSectionIndex = 0;
         this.state.currentChunkIndex = 0;
         this.updateNavPanel(document.querySelector('#loreNav'));
+        this.renderTagList();
 
         this.sectionButtons.forEach((button, index) => {
             const sectionId = this.state.currentSectionIds[index];

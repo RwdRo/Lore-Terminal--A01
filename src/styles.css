@@ -213,6 +213,58 @@ html, body {
   background: #FFBF80;
 }
 
+/* === TAG LIST === */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3vw;
+  margin-top: 0.5vw;
+}
+.tag-list button {
+  background: #333;
+  border: 1px solid #FF9E42;
+  color: #FFEEDC;
+  padding: 0.2vw 0.6vw;
+  font-size: 0.9vw;
+  cursor: pointer;
+}
+.tag-list button.active {
+  background: #FF9E42;
+  color: #1A1410;
+}
+
+/* === BOOKMARK BUTTON === */
+.bookmark-btn {
+  background: none;
+  border: none;
+  color: #FFBF80;
+  font-size: 1.2vw;
+  cursor: pointer;
+  float: right;
+}
+.bookmark-btn.active {
+  color: #FF9E42;
+}
+
+/* === COMMENTS PLACEHOLDER === */
+.comments-placeholder {
+  margin-top: 1vw;
+  padding-top: 0.5vw;
+  border-top: 1px solid #333;
+  font-size: 0.9vw;
+  color: #777;
+}
+
+/* === FORMATTER === */
+#formatter textarea {
+  font-family: monospace;
+  margin-top: 0.5vw;
+  background: #1A1410;
+  color: #FFEEDC;
+  border: 1px solid #FF9E42;
+  padding: 0.5vw;
+}
+
 /* === LORE CONTENT === */
 .lore-content {
   flex: 1;
