@@ -1,48 +1,28 @@
-let session = null;
-let kit = null;
-const authChangeCallbacks = [];
-const CHAIN = { id: '1064487b3cd1a897c10f3fa6b05b68f29ed27b5c46e81d7b78c4f2b5ab17e7f9', url: 'https://wax.greymass.com' };
+import { SessionKit } from '@wharfkit/session'
+import { WalletPluginCloudWallet } from '@wharfkit/wallet-plugin-cloudwallet'
 
-async function getKit() {
-    if (kit) return kit;
-    const { SessionKit } = await import('@wharfkit/session');
-    const { WalletPluginCloudWallet } = await import('@wharfkit/wallet-plugin-cloudwallet');
+let session = null
+let sessionKit
+const authChangeCallbacks = []
+const CHAIN = {
+  id: '1064487b3cd1a897c10f3fa6b05b68f29ed27b5c46e81d7b78c4f2b5ab17e7f9',
+  url: 'https://wax.greymass.com'
+}
 
-    class SimpleUI {
-        constructor(requireChainSelect = false) {
-            this.requireChainSelect = requireChainSelect;
-        }
-        async login(context) {
-            return {
-                chainId: context.chains[0].id,
-                walletPluginIndex: 0,
-                permissionLevel: context.permissionLevel
-            };
-        }
-        async onError(error) { console.error('SessionKit UI error:', error); }
-        async onAccountCreate() {}
-        async onAccountCreateComplete() {}
-        async onLogin() {}
-        async onLoginComplete() {}
-        async onTransact() {}
-        async onTransactComplete() {}
-        async onSign() {}
-        async onSignComplete() {}
-        async onBroadcast() {}
-        async onBroadcastComplete() {}
-        prompt() { return { result: Promise.resolve(null), cancel: () => {} }; }
-        status() {}
-        translate(key) { return key; }
-        getTranslate() { return (key) => key; }
-        addTranslations() {}
-    }
-
-    const walletPlugin = new WalletPluginCloudWallet();
-    kit = new SessionKit({
-        appName: 'A01 Terminal',
-        walletPlugins: [walletPlugin]
-    });
-    return kit;
+function getKit() {
+  if (!sessionKit) {
+    const walletPlugin = new WalletPluginCloudWallet()
+    sessionKit = new SessionKit({
+      appName: 'A-01 Canon Terminal',
+      chains: [CHAIN],
+      walletPlugins: [walletPlugin],
+      ui: {
+        render: () => {},
+        onError: (error) => console.error('[SessionKit UI Error]', error)
+      }
+    })
+  }
+  return sessionKit
 }
 
 function debounce(func, wait) {
@@ -88,7 +68,7 @@ export function isLoggedIn() {
 
 export async function login() {
     try {
-        const sessionKit = await getKit();
+    const sessionKit = getKit();
         const result = await sessionKit.login({ chain: CHAIN });
         if (!result || !result.session) throw new Error('Login failed: No session returned.');
         session = result.session;
@@ -106,7 +86,7 @@ export async function login() {
 
 export async function logout() {
     try {
-        const sessionKit = await getKit();
+        const sessionKit = getKit();
         if (session) {
             await sessionKit.logout(session);
             session = null;
@@ -121,7 +101,7 @@ export async function logout() {
 
 export async function restoreSession() {
     try {
-        const sessionKit = await getKit();
+        const sessionKit = getKit();
 
         const result = await sessionKit.restore({ chain: CHAIN });
         if (result && result.session && result.session.actor) {
