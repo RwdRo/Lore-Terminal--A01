@@ -19,6 +19,24 @@ export async function initVotes() {
     }
 }
 
+export async function renderVoteSidebar(elementId = 'loreNav') {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.innerHTML = '<div class="loading">LOADING...</div>';
+    try {
+        const data = await fetchDaoInfo();
+        const proposals = data?.TokeLore?.proposals || [];
+        if (!proposals.length) {
+            el.innerHTML = '<p>No active proposals</p>';
+            return;
+        }
+        el.innerHTML = '<ul>' + proposals.map(p => `<li>${p.title}</li>`).join('') + '</ul>';
+    } catch (err) {
+        el.innerHTML = '<p>Error loading proposals</p>';
+        console.error('Vote sidebar error:', err);
+    }
+}
+
 function renderVotes(container, proposals) {
     container.innerHTML = '';
     if (!proposals.length) {

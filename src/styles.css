@@ -232,6 +232,14 @@ html, body {
   background: #FF9E42;
   color: #1A1410;
 }
+.tag-details {
+  margin-top: 0.5vw;
+}
+.tag-details summary {
+  cursor: pointer;
+  color: #FF9E42;
+  margin-bottom: 0.3vw;
+}
 
 /* === BOOKMARK BUTTON === */
 .bookmark-btn {
@@ -376,6 +384,23 @@ html, body {
   width: 100%;
   height: 100%;
   position: relative;
+}
+.orbit-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: grayscale(1) brightness(1.15) hue-rotate(35deg) saturate(140%);
+  pointer-events: none;
+}
+.map-space img {
+  filter: grayscale(1) brightness(1.15) hue-rotate(35deg) saturate(140%);
+}
+.planet-icon img,
+.planet-img {
+  filter: grayscale(1) brightness(1.15) hue-rotate(35deg) saturate(140%);
 }
 .planet {
   position: absolute;

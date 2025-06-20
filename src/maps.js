@@ -26,12 +26,20 @@ export class Maps {
 
   // === SPACE VIEW WITH PLANETS IN ORBIT ===
   renderSpaceView() {
+    const viewWidth = 960;
+    const viewHeight = 600;
     this.container.innerHTML = `
-      <div id="spaceView" class="map-space">
+      <div id="spaceView" class="map-space" style="width:${viewWidth}px;height:${viewHeight}px;">
+        <img src="/assets/orbit-bg.png" alt="Orbit Background" class="orbit-bg" />
         ${this.renderPlanets()}
         <div id="planetTooltip" class="planet-tooltip" hidden></div>
       </div>
     `;
+
+    const spaceView = this.container.querySelector('#spaceView');
+    const scale = Math.min(this.container.clientWidth / viewWidth, this.container.clientHeight / viewHeight);
+    spaceView.style.transformOrigin = 'top left';
+    spaceView.style.transform = `scale(${scale})`;
 
     this.attachPlanetEvents();
   }
