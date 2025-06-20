@@ -9,7 +9,7 @@ async function getKit() {
     const walletPlugin = new WalletPluginCloudWallet();
     kit = new SessionKit({
         appName: 'A01 Terminal',
-        chains: [{ id: '1064487b3cd1a897', url: 'https://wax.greymass.com' }],
+        chains: [{ id: '1064487b3cd1a897c10f3fa6b05b68f29ed27b5c46e81d7b78c4f2b5ab17e7f9', url: 'https://wax.greymass.com' }],
         ui: { requireChainSelect: false },
         walletPlugins: [walletPlugin]
     });
