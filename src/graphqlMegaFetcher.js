@@ -1,5 +1,5 @@
-// Use local proxy to avoid browser CORS restrictions
-export const API_URL = '/api/graphql';
+// GraphQL endpoint routed through Vite dev proxy
+export const API_URL = '/aw-graphql';
 
 // === CACHING UTILITIES ===
 function getCacheKey(query, variables) {

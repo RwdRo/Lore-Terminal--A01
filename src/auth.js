@@ -13,13 +13,9 @@ function getKit() {
   if (!sessionKit) {
     const walletPlugin = new WalletPluginCloudWallet()
     sessionKit = new SessionKit({
-      appName: 'A-01 Canon Terminal',
+      appName: 'A01 Terminal',
       chains: [CHAIN],
-      walletPlugins: [walletPlugin],
-      ui: {
-        render: () => {},
-        onError: (error) => console.error('[SessionKit UI Error]', error)
-      }
+      walletPlugins: [walletPlugin]
     })
   }
   return sessionKit

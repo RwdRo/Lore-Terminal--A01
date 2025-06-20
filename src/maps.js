@@ -71,7 +71,7 @@ export class Maps {
 
       el.addEventListener('mouseenter', () => {
         tooltip.innerHTML = `<strong>${name}</strong><br>${data.short.join('<br>')}`;
-        tooltip.style.left = `${el.offsetLeft + 60}px`;
+        tooltip.style.left = `${el.offsetLeft + el.offsetWidth / 2 + 8}px`;
         tooltip.style.top = `${el.offsetTop - 10}px`;
         tooltip.hidden = false;
       });

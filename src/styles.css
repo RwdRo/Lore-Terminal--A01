@@ -427,16 +427,21 @@ html, body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: grayscale(1) brightness(1.15) hue-rotate(35deg) saturate(140%);
+  filter: grayscale(1) brightness(1.2) hue-rotate(40deg) saturate(160%);
   pointer-events: none;
 }
 .map-space img {
-  filter: grayscale(1) brightness(1.15) hue-rotate(35deg) saturate(140%);
+  filter: grayscale(1) brightness(1.2) hue-rotate(40deg) saturate(160%);
+}
+.planet-icon {
+  position: absolute;
+  width: 72px;
+  height: 72px;
 }
 .planet-icon img,
 .planet-img {
-  width: 90%;
-  filter: hue-rotate(30deg) saturate(3);
+  width: 100%;
+  filter: hue-rotate(40deg) saturate(4);
 }
 .planet {
   position: absolute;
@@ -472,6 +477,17 @@ html, body {
   white-space: pre-line;
   text-align: center;
   z-index: 5;
+}
+.planet-tooltip {
+  position: absolute;
+  background: #1A1410;
+  border: 1px solid #FF9E42;
+  color: #FFEEDC;
+  padding: 0.3vw 0.6vw;
+  font-size: 0.9vw;
+  white-space: pre-line;
+  pointer-events: none;
+  z-index: 10;
 }
 .planet-detail {
   position: absolute;
