@@ -1,9 +1,29 @@
-export const API_URL = 'https://api.alienworlds.io/graphql/graphql';
+export const API_URL = 'https://api.alienworlds.io/graphql';
+
+
+
+function loadCache(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp > 60 * 60 * 1000) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function saveCache(key, data) {
+  try {
+  }
+}
 
 async function graphqlRequest(query, variables = {}) {
-  let response;
+  const key = getCacheKey(query, variables);
+  const cached = loadCache(key);
   try {
-    response = await fetch(API_URL, {
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -11,29 +31,30 @@ async function graphqlRequest(query, variables = {}) {
       },
       body: JSON.stringify({ query, variables })
     });
+
+    const text = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${text.slice(0, 100)}`);
+    }
+
+    if (text.trim().startsWith('<!DOCTYPE')) {
+      throw new Error('Unexpected HTML response');
+    }
+
+    const json = JSON.parse(text);
+
+    if (json.errors) {
+      const message = json.errors.map(e => e.message).join(', ');
+      throw new Error(message);
+    }
+
+    saveCache(key, json.data);
+    return json.data;
   } catch (err) {
-    throw new Error('Network error: ' + err.message);
+    if (cached) return cached;
+    throw err;
   }
-
-  const text = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${text.slice(0, 100)}`);
-  }
-
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch (e) {
-    console.error('Non-JSON response:', text);
-    throw new Error('Invalid JSON response');
-  }
-
-  if (json.errors) {
-    const message = json.errors.map(e => e.message).join(', ');
-    throw new Error(message);
-  }
-  return json.data;
 }
 
 export async function fetchWalletDetails(account) {
