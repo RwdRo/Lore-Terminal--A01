@@ -4,7 +4,7 @@ This document provides extra information for contributors and maintainers of the
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 18+ (required for built-in `fetch` support)
 - npm
 
 Install dependencies after cloning:
