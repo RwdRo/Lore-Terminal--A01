@@ -1,7 +1,6 @@
 // server.js
 import express from 'express';
 import dotenv from 'dotenv';
-import fetch from 'node-fetch';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import path from 'path';
 import { fileURLToPath } from 'url';

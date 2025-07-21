@@ -12,13 +12,12 @@
   "dependencies": {
     "@wharfkit/session": "^1.2.10",
     "@wharfkit/wallet-plugin-cloudwallet": "^1.0.3",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
-    "https-proxy-agent": "^7.0.6",
-    "node-fetch": "^2.7.0"
+    "https-proxy-agent": "^7.0.6"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
-    "vite": "^6.3.5"
+    "concurrently": "^9.2.0",
+    "vite": "^7.0.5"
   }
 }
