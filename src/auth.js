@@ -62,20 +62,31 @@ export function isLoggedIn() {
     return Boolean(session?.actor);
 }
 
-export async function login() {
+export async function login(options = {}) {
     try {
-    const sessionKit = getKit();
-        const result = await sessionKit.login({ chain: CHAIN });
-        if (!result || !result.session) throw new Error('Login failed: No session returned.');
-        session = result.session;
+        const kit = getKit();
+        const result = await kit.login({ chain: CHAIN });
+        if (!result || !result.session) {
+            throw new Error('Login failed: No session returned.');
+        }
 
-        const wallet = session.actor.toString();
-        sessionStorage.setItem('WAX_WALLET', wallet);
-        dispatchAuthChange(wallet);
-        return wallet;
+        session = result.session;
+        const actor = session.actor.toString();
+        console.log(`[Auth] Logged in as ${actor}`);
+
+        sessionStorage.setItem('WAX_WALLET', actor);
+        dispatchAuthChange(actor);
+        return actor;
 
     } catch (error) {
         console.error('[Auth] Login failed:', error);
+        if (options && typeof options.onError === 'function') {
+            try {
+                options.onError(error);
+            } catch (err) {
+                console.error('[Auth] onError handler threw:', err);
+            }
+        }
         throw new Error(error.message || 'Failed to connect to WAX wallet.');
     }
 }
