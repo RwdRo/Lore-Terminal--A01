@@ -2,6 +2,7 @@ import { installBufferPolyfill } from './bufferPolyfill.js'
 installBufferPolyfill()
 import { SessionKit } from '@wharfkit/session'
 import { WalletPluginCloudWallet } from '@wharfkit/wallet-plugin-cloudwallet'
+import { SimpleUI } from './simpleUI.js'
 
 let session = null
 let sessionKit
@@ -17,7 +18,8 @@ function getKit() {
     sessionKit = new SessionKit({
       appName: 'A01 Terminal',
       chains: [CHAIN],
-      walletPlugins: [walletPlugin]
+      walletPlugins: [walletPlugin],
+      ui: new SimpleUI()
     })
   }
   return sessionKit
@@ -126,6 +128,10 @@ export async function restoreSession() {
 
     } catch (error) {
         console.error('[Auth] Restore session failed:', error);
+        try {
+            const kit = getKit();
+            await kit.storage.remove('session');
+        } catch {}
         dispatchAuthChange(null);
         return null;
     }
