@@ -50,12 +50,15 @@ app.get('/api/canon', async (req, res) => {
 
 app.get('/api/proposed', async (req, res) => {
     try {
+        const headers = {
+            'Accept': 'application/vnd.github+json',
+            'User-Agent': 'Alien-Worlds-Lore-App'
+        };
+        if (GITHUB_TOKEN) {
+            headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+        }
         const response = await fetch('https://api.github.com/repos/Alien-Worlds/the-lore/pulls?state=open&ref=main', {
-            headers: {
-                'Accept': 'application/vnd.github+json',
-                'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                'User-Agent': 'Alien-Worlds-Lore-App'
-            },
+            headers,
             agent
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -70,12 +73,15 @@ app.get('/api/proposed', async (req, res) => {
 app.get('/api/pulls/:number/files', async (req, res) => {
     const { number } = req.params;
     try {
+        const headers = {
+            'Accept': 'application/vnd.github+json',
+            'User-Agent': 'Alien-Worlds-Lore-App'
+        };
+        if (GITHUB_TOKEN) {
+            headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+        }
         const response = await fetch(`https://api.github.com/repos/Alien-Worlds/the-lore/pulls/${number}/files`, {
-            headers: {
-                'Accept': 'application/vnd.github+json',
-                'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                'User-Agent': 'Alien-Worlds-Lore-App'
-            },
+            headers,
             agent
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -90,12 +96,15 @@ app.get('/api/pulls/:number/files', async (req, res) => {
 app.get('/api/contents', async (req, res) => {
     const { url } = req.query;
     try {
+        const headers = {
+            'Accept': 'application/vnd.github.raw+json',
+            'User-Agent': 'Alien-Worlds-Lore-App'
+        };
+        if (GITHUB_TOKEN) {
+            headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+        }
         const response = await fetch(url, {
-            headers: {
-                'Accept': 'application/vnd.github.raw+json',
-                'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                'User-Agent': 'Alien-Worlds-Lore-App'
-            },
+            headers,
             agent
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
