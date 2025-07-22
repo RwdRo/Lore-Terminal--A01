@@ -39,22 +39,28 @@ async function graphqlRequest(query, variables = {}) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Accept: 'application/json'
       },
       body: JSON.stringify({ query, variables })
     });
 
     const text = await response.text();
+    const contentType = response.headers.get('content-type') || '';
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${text.slice(0, 100)}`);
+      throw new Error(`Request failed (${response.status} ${response.statusText})`);
     }
 
-    if (text.trim().startsWith('<!DOCTYPE')) {
+    if (contentType.includes('text/html') || text.trim().startsWith('<')) {
       throw new Error('Unexpected HTML response');
     }
 
-    const json = JSON.parse(text);
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new Error('Invalid JSON response');
+    }
 
     if (json.errors) {
       const message = json.errors.map(e => e.message).join(', ');
