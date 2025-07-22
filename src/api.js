@@ -31,6 +31,24 @@ export async function fetchCanonLore() {
     }
 }
 
+export async function fetchLoreFromUrl(url) {
+    if (!url) throw new Error('URL is required');
+    const response = await fetchWithRetry(url);
+    const text = await response.text();
+    let markdown = text;
+    try {
+        const json = JSON.parse(text);
+        if (typeof json === 'string') {
+            markdown = json;
+        } else if (json && (json.content || json.text)) {
+            markdown = json.content || json.text;
+        }
+    } catch {
+        // not JSON, treat as markdown
+    }
+    return parseMarkdown(markdown);
+}
+
 export async function fetchProposedLore(canonSections) {
     if (cache.proposed) return cache.proposed;
 
@@ -112,7 +130,7 @@ export async function fetchProposedLore(canonSections) {
     }
 }
 
-function parseMarkdown(markdown) {
+export function parseMarkdown(markdown) {
     if (!markdown) return [];
 
     const sections = [];
