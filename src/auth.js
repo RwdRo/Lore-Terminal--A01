@@ -1,3 +1,5 @@
+import { installBufferPolyfill } from './bufferPolyfill.js'
+installBufferPolyfill()
 import { SessionKit } from '@wharfkit/session'
 import { WalletPluginCloudWallet } from '@wharfkit/wallet-plugin-cloudwallet'
 
