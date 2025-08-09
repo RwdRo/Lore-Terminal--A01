@@ -56,7 +56,7 @@ export async function fetchProposedLore(canonSections) {
         console.warn('No Canon sections provided for filtering Proposed lore. This may lead to duplicate content.');
     }
 
-    const pullsUrl = '/api/proposed?limit=100&offset=0';
+    const pullsUrl = '/api/proposed';
     try {
         const pullsResponse = await fetchWithRetry(pullsUrl);
         const pulls = await pullsResponse.json();
@@ -111,11 +111,10 @@ export async function fetchProposedLore(canonSections) {
 
             return {
                 title: pull.title,
-                status: pull.status,
+                status: pull.state,
                 sections: newSections,
                 prNumber: pull.number,
-                date: pull.date,
-                author: pull.author
+                date: pull.created_at
             };
         });
 
@@ -129,12 +128,6 @@ export async function fetchProposedLore(canonSections) {
         console.error('Error fetching Proposed lore:', error);
         throw new Error('Failed to fetch Proposed lore');
     }
-}
-
-export async function fetchProposedPRs(limit = 20, offset = 0) {
-    const url = `/api/proposed?limit=${limit}&offset=${offset}`;
-    const response = await fetchWithRetry(url);
-    return response.json();
 }
 
 export function parseMarkdown(markdown) {

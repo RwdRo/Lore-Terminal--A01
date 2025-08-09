@@ -16,13 +16,6 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 const agent = proxy ? new HttpsProxyAgent(proxy) : undefined;
 
-// simple in-memory cache
-const cache = {
-    canon: { timestamp: 0, data: null },
-    proposed: {}
-};
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
 // Parse JSON bodies for GraphQL proxy requests
 app.use(express.json());
 
@@ -33,11 +26,6 @@ app.use(express.static('public'));
 
 app.get('/api/canon', async (req, res) => {
     try {
-        const now = Date.now();
-        if (cache.canon.data && now - cache.canon.timestamp < CACHE_TTL) {
-            return res.type('text/markdown').send(cache.canon.data);
-        }
-
         const headers = {
             'Accept': 'application/vnd.github.raw',
             'User-Agent': 'Alien-Worlds-Lore-App'
@@ -53,28 +41,15 @@ app.get('/api/canon', async (req, res) => {
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const text = await response.text();
-        cache.canon = { data: text, timestamp: now };
         res.type('text/markdown').send(text);
     } catch (error) {
         console.error('Error fetching Canon lore:', error);
-        res.status(500).json({ error: 'Error fetching Canon lore' });
+        res.status(500).send('Error fetching Canon lore');
     }
 });
 
 app.get('/api/proposed', async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit || '20', 10);
-        const offset = parseInt(req.query.offset || '0', 10);
-        if (isNaN(limit) || isNaN(offset) || limit <= 0) {
-            return res.status(400).json({ error: 'Invalid limit or offset' });
-        }
-
-        const cacheKey = `${limit}_${offset}`;
-        const now = Date.now();
-        if (cache.proposed[cacheKey] && now - cache.proposed[cacheKey].timestamp < CACHE_TTL) {
-            return res.json(cache.proposed[cacheKey].data);
-        }
-
         const headers = {
             'Accept': 'application/vnd.github+json',
             'User-Agent': 'Alien-Worlds-Lore-App'
@@ -82,32 +57,16 @@ app.get('/api/proposed', async (req, res) => {
         if (GITHUB_TOKEN) {
             headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
         }
-
-        const page = Math.floor(offset / limit) + 1;
-        const response = await fetch(`https://api.github.com/repos/Alien-Worlds/the-lore/pulls?state=all&per_page=${limit}&page=${page}`, {
+        const response = await fetch('https://api.github.com/repos/Alien-Worlds/the-lore/pulls?state=open&ref=main', {
             headers,
             agent
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const pulls = await response.json();
-        const start = offset % limit;
-        const sliced = pulls.slice(start, start + limit);
-        const formatted = sliced.map(pr => ({
-            number: pr.number,
-            title: pr.title,
-            state: pr.state,
-            created_at: pr.created_at,
-            merged_at: pr.merged_at,
-            author: pr.user?.login,
-            date: pr.created_at,
-            status: pr.merged_at ? 'merged' : pr.state
-        }));
-
-        cache.proposed[cacheKey] = { data: formatted, timestamp: now };
-        res.json(formatted);
+        res.json(pulls);
     } catch (error) {
         console.error('Error fetching Proposed lore:', error);
-        res.status(500).json({ error: 'Error fetching Proposed lore' });
+        res.status(500).send('Error fetching Proposed lore');
     }
 });
 
@@ -130,15 +89,12 @@ app.get('/api/pulls/:number/files', async (req, res) => {
         res.json(files);
     } catch (error) {
         console.error(`Error fetching files for PR #${number}:`, error);
-        res.status(500).json({ error: `Error fetching files for PR #${number}` });
+        res.status(500).send(`Error fetching files for PR #${number}`);
     }
 });
 
 app.get('/api/contents', async (req, res) => {
     const { url } = req.query;
-    if (!url) {
-        return res.status(400).json({ error: 'Missing url parameter' });
-    }
     try {
         const headers = {
             'Accept': 'application/vnd.github.raw+json',
@@ -156,7 +112,7 @@ app.get('/api/contents', async (req, res) => {
         res.send(content);
     } catch (error) {
         console.error('Error fetching content:', error);
-        res.status(500).json({ error: 'Error fetching content' });
+        res.status(500).send('Error fetching content');
     }
 });
 
@@ -176,7 +132,7 @@ app.post('/api/graphql', async (req, res) => {
         res.status(response.status).type('application/json').send(text);
     } catch (error) {
         console.error('Error proxying GraphQL:', error);
-        res.status(500).json({ error: 'Error fetching GraphQL data' });
+        res.status(500).send('Error fetching GraphQL data');
     }
 });
 
