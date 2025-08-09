@@ -1,20 +1,27 @@
 // vote.js
-import { fetchDaoInfo } from './graphqlMegaFetcher.js';
 let authPromise;
 function getAuth() {
     if (!authPromise) authPromise = import('./auth.js');
     return authPromise;
 }
 
-export async function initVotes() {
+async function fetchProposed(limit = 20, offset = 0) {
+    const url = `/api/proposed?limit=${limit}&offset=${offset}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+export async function initVotes(limit = 20, offset = 0) {
     const panel = document.getElementById('votePanel');
     if (!panel) return;
     panel.innerHTML = '<div class="loading">LOADING VOTES...</div>';
     try {
-        const data = await fetchDaoInfo();
-        const proposals = data?.TokeLore?.proposals || [];
+        const data = await fetchProposed(limit, offset);
+        const proposals = Array.isArray(data.items) ? data.items : data;
         renderVotes(panel, proposals);
     } catch (err) {
+        console.error('Voting fetch error:', err);
         panel.innerHTML = `<div class="error">Error loading votes: ${err.message}</div>`;
     }
 }
@@ -24,11 +31,11 @@ export async function renderVoteSidebar(elementId = 'loreNav') {
     if (!el) return;
     el.innerHTML = '<div class="loading">LOADING...</div>';
     try {
-        const data = await fetchDaoInfo();
-        const proposals = data?.TokeLore?.proposals || [];
+        const data = await fetchProposed(50, 0);
+        const proposals = Array.isArray(data.items) ? data.items : data;
         const wallet = sessionStorage.getItem('WAX_WALLET');
         const voted = wallet ? new Set(JSON.parse(localStorage.getItem(`A01_VOTES_${wallet}`) || '[]')) : new Set();
-        const votedProposals = proposals.filter(p => voted.has(p.id));
+        const votedProposals = proposals.filter(p => voted.has(p.prNumber));
         if (!votedProposals.length) {
             el.innerHTML = '<p>No voted proposals</p>';
             return;
@@ -52,15 +59,15 @@ function renderVotes(container, proposals) {
         card.className = 'vote-card';
         card.innerHTML = `
             <h3>${p.title}</h3>
-            <p>Status: ${p.status}</p>
-            <p>Yes: ${p.yes_votes} | No: ${p.no_votes}</p>
+            <p>Status: ${p.status || p.state}</p>
+            <p>Yes: ${p.yes_votes || 0} | No: ${p.no_votes || 0}</p>
             <div class="vote-actions">
                 <button class="vote-yes">YES</button>
                 <button class="vote-no">NO</button>
             </div>
         `;
-        card.querySelector('.vote-yes').addEventListener('click', () => vote(p.id, 'yes'));
-        card.querySelector('.vote-no').addEventListener('click', () => vote(p.id, 'no'));
+        card.querySelector('.vote-yes').addEventListener('click', () => vote(p.prNumber || p.id, 'yes'));
+        card.querySelector('.vote-no').addEventListener('click', () => vote(p.prNumber || p.id, 'no'));
         container.appendChild(card);
     });
 }
@@ -72,7 +79,6 @@ function vote(id, choice) {
             return;
         }
         console.log(`Voting ${choice.toUpperCase()} on proposal ${id}`);
-        // Integration with blockchain signing would go here
         const wallet = sessionStorage.getItem('WAX_WALLET');
         if (wallet) {
             const key = `A01_VOTES_${wallet}`;
@@ -80,5 +86,5 @@ function vote(id, choice) {
             voted.add(id);
             localStorage.setItem(key, JSON.stringify([...voted]));
         }
-    });
+    }).catch(err => console.error('Vote error:', err));
 }

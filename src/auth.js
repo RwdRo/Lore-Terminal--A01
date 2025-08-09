@@ -69,7 +69,7 @@ export function isLoggedIn() {
 export async function login(options = {}) {
     try {
         const kit = getKit();
-        const result = await kit.login({ chain: CHAIN });
+        const result = await kit.login({ chain: CHAIN, chainId: CHAIN.id });
         if (!result || !result.session) {
             throw new Error('Login failed: No session returned.');
         }
@@ -112,19 +112,22 @@ export async function logout() {
 
 export async function restoreSession() {
     try {
-        const sessionKit = getKit();
+        const kit = getKit();
+        const result = await kit.restore({ chain: CHAIN, chainId: CHAIN.id });
 
-        const result = await sessionKit.restore({ chain: CHAIN });
         if (result && result.session && result.session.actor) {
             session = result.session;
             const wallet = session.actor.toString();
             sessionStorage.setItem('WAX_WALLET', wallet);
             dispatchAuthChange(wallet);
             return wallet;
-        } else {
-            dispatchAuthChange(null);
-            return null;
         }
+
+        try { await kit.storage.remove('session'); } catch {}
+        session = null;
+        sessionStorage.removeItem('WAX_WALLET');
+        dispatchAuthChange(null);
+        return null;
 
     } catch (error) {
         console.error('[Auth] Restore session failed:', error);
@@ -132,6 +135,8 @@ export async function restoreSession() {
             const kit = getKit();
             await kit.storage.remove('session');
         } catch {}
+        session = null;
+        sessionStorage.removeItem('WAX_WALLET');
         dispatchAuthChange(null);
         return null;
     }

@@ -26,7 +26,8 @@ export async function fetchCanonLore() {
         console.log('Fetched Canon lore:', parsed.length, 'sections');
         return parsed;
     } catch (error) {
-        console.error('Error fetching Canon lore:', error);
+        console.error('Error fetching Canon lore:', url, error?.message);
+        if (cache.canon) return cache.canon;
         throw new Error('Failed to fetch Canon lore');
     }
 }
@@ -59,7 +60,8 @@ export async function fetchProposedLore(canonSections) {
     const pullsUrl = '/api/proposed';
     try {
         const pullsResponse = await fetchWithRetry(pullsUrl);
-        const pulls = await pullsResponse.json();
+        const json = await pullsResponse.json();
+        const pulls = Array.isArray(json.items) ? json.items : json;
         console.log('Fetched pull requests:', pulls.length, 'PRs');
 
         if (!Array.isArray(pulls) || pulls.length === 0) {
@@ -125,7 +127,8 @@ export async function fetchProposedLore(canonSections) {
         cache.proposed = proposedLore;
         return proposedLore;
     } catch (error) {
-        console.error('Error fetching Proposed lore:', error);
+        console.error('Error fetching Proposed lore:', pullsUrl, error?.message);
+        if (cache.proposed) return cache.proposed;
         throw new Error('Failed to fetch Proposed lore');
     }
 }
