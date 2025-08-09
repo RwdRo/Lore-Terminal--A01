@@ -1,7 +1,7 @@
 import {AbstractUserInterface} from '@wharfkit/session'
 import {cancelable} from '@wharfkit/common'
 
-const WAX_CHAIN_ID = '1064487b3cd1a897c10f3fa6b05b68f29ed27b5c46e81d7b78c4f2b5ab17e7f9'
+const WAX_CHAIN_ID = '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4'
 
 export class SimpleUI extends AbstractUserInterface {
   async login(context) {

@@ -5,7 +5,7 @@ async function fetchWithRetry(url, retries = 3) {
     for (let i = 0; i < retries; i++) {
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (response.status !== 200) throw new Error(`${url} HTTP ${response.status}`);
             return response;
         } catch (error) {
             if (i === retries - 1) throw error;
@@ -76,11 +76,6 @@ export async function fetchProposedLore(canonSections) {
         const lorePromises = pulls.map(async (pull) => {
             const filesUrl = `/api/pulls/${pull.number}/files`;
             const filesResponse = await fetchWithRetry(filesUrl);
-            if (!filesResponse.ok) {
-                console.warn(`Failed to fetch files for PR #${pull.number}`);
-                return null;
-            }
-
             const files = await filesResponse.json();
             const markdownFile = files.find(file => file.filename.endsWith('.md'));
             if (!markdownFile) {
@@ -89,11 +84,6 @@ export async function fetchProposedLore(canonSections) {
             }
 
             const contentResponse = await fetchWithRetry(`/api/contents?url=${encodeURIComponent(markdownFile.contents_url)}`);
-            if (!contentResponse.ok) {
-                console.warn(`Failed to fetch content for PR #${pull.number}`);
-                return null;
-            }
-
             const content = await contentResponse.text();
             const parsedSections = parseMarkdown(content);
 
