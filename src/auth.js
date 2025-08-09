@@ -8,7 +8,7 @@ let session = null
 let sessionKit
 const authChangeCallbacks = []
 const CHAIN = {
-  id: '1064487b3cd1a897c10f3fa6b05b68f29ed27b5c46e81d7b78c4f2b5ab17e7f9',
+  id: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
   url: 'https://wax.greymass.com'
 }
 
@@ -69,7 +69,7 @@ export function isLoggedIn() {
 export async function login(options = {}) {
     try {
         const kit = getKit();
-        const result = await kit.login({ chain: CHAIN, chainId: CHAIN.id });
+        const result = await kit.login({ chain: CHAIN });
         if (!result || !result.session) {
             throw new Error('Login failed: No session returned.');
         }
@@ -111,33 +111,30 @@ export async function logout() {
 }
 
 export async function restoreSession() {
+    const kit = getKit();
     try {
-        const kit = getKit();
-        const result = await kit.restore({ chain: CHAIN, chainId: CHAIN.id });
-
-        if (result && result.session && result.session.actor) {
+        const result = await kit.restore({ chain: CHAIN });
+        if (result?.session?.actor) {
             session = result.session;
             const wallet = session.actor.toString();
             sessionStorage.setItem('WAX_WALLET', wallet);
             dispatchAuthChange(wallet);
             return wallet;
         }
-
-        try { await kit.storage.remove('session'); } catch {}
-        session = null;
-        sessionStorage.removeItem('WAX_WALLET');
-        dispatchAuthChange(null);
-        return null;
-
     } catch (error) {
         console.error('[Auth] Restore session failed:', error);
-        try {
-            const kit = getKit();
-            await kit.storage.remove('session');
-        } catch {}
+        if (error.message && error.message.includes('Checksum')) {
+            try { await kit.storage.remove('session'); } catch {}
+        }
         session = null;
         sessionStorage.removeItem('WAX_WALLET');
         dispatchAuthChange(null);
         return null;
     }
+
+    try { await kit.storage.remove('session'); } catch {}
+    session = null;
+    sessionStorage.removeItem('WAX_WALLET');
+    dispatchAuthChange(null);
+    return null;
 }

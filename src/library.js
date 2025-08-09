@@ -89,7 +89,8 @@ export class Library {
             this.renderTagList();
             await this.renderLore();
         } catch (error) {
-            this.elements.loreContent.innerHTML = `<div class="error">Error loading lore: ${error.message}. Please try again later.</div>`;
+            console.error('Library init error:', error);
+            this.elements.loreContent.innerHTML = '<div class="error">Error loading lore. Please try again later.</div>';
         } finally {
             this.elements.loading.style.display = 'none';
         }

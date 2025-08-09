@@ -47,8 +47,8 @@ async function graphqlRequest(query, variables = {}) {
     const text = await response.text();
     const contentType = response.headers.get('content-type') || '';
 
-    if (!response.ok) {
-      throw new Error(`Request failed (${response.status} ${response.statusText})`);
+    if (response.status !== 200) {
+      throw new Error(`${API_URL} HTTP ${response.status}`);
     }
 
     if (contentType.includes('text/html') || text.trim().startsWith('<')) {

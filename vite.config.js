@@ -32,9 +32,10 @@ export default defineConfig({
         secure: false
       },
       '/aw-graphql': {
-        target: 'https://api.alienworlds.io/graphql',
+        target: 'https://api.alienworlds.io',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        rewrite: (p) => p.replace(/^\/aw-graphql/, '')
       }
     }
   }

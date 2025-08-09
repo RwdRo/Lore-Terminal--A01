@@ -8,7 +8,7 @@ function getAuth() {
 async function fetchProposed(limit = 20, offset = 0) {
     const url = `/api/proposed?limit=${limit}&offset=${offset}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (res.status !== 200) throw new Error(`${url} HTTP ${res.status}`);
     return res.json();
 }
 
@@ -22,7 +22,7 @@ export async function initVotes(limit = 20, offset = 0) {
         renderVotes(panel, proposals);
     } catch (err) {
         console.error('Voting fetch error:', err);
-        panel.innerHTML = `<div class="error">Error loading votes: ${err.message}</div>`;
+        panel.innerHTML = '<div class="error">Error loading votes. Please try again later.</div>';
     }
 }
 

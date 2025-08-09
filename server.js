@@ -18,6 +18,7 @@ const agent = proxy ? new HttpsProxyAgent(proxy) : undefined;
 
 const cache = new Map();
 const CACHE_TTL = 1000 * 60 * 5;
+const DEBUG = process.env.DEBUG === '1';
 
 function getCached(key) {
     const item = cache.get(key);
@@ -32,6 +33,16 @@ function setCached(key, data) {
 
 // Parse JSON bodies for GraphQL proxy requests
 app.use(express.json());
+
+// Optional request logging
+app.use((req, res, next) => {
+    res.on('finish', () => {
+        if (DEBUG) {
+            console.log(`${req.method} ${req.originalUrl} -> ${res.statusCode}`);
+        }
+    });
+    next();
+});
 
 // Serve static frontend (from Vite build output or raw public)
 app.use(express.static('public'));
@@ -53,10 +64,10 @@ app.get('/api/canon', async (req, res) => {
 
         const response = await fetch(url, { headers, agent });
         const body = await response.text();
-        if (!response.ok) {
-            console.error(`[canon] ${response.status} ${url} - ${body.slice(0,100)}`);
-            const code = response.status === 403 ? 502 : response.status;
-            return res.status(code).json({ error: `GitHub ${response.status}` });
+        if (response.status !== 200) {
+            const note = body.slice(0, 100);
+            console.error(`[canon] ${response.status} ${url} - ${note}`);
+            return res.status(502).json({ error: 'Upstream GitHub error', status: response.status, note });
         }
         const json = JSON.parse(body);
         const content = Buffer.from(json.content || '', 'base64').toString('utf-8');
@@ -64,7 +75,7 @@ app.get('/api/canon', async (req, res) => {
         res.type('text/markdown').send(content);
     } catch (error) {
         console.error(`[canon] fetch failed ${url} - ${error.message}`);
-        res.status(502).json({ error: 'Failed to fetch Canon lore' });
+        res.status(502).json({ error: 'Upstream GitHub error', status: 500, note: error.message });
     }
 });
 
@@ -84,18 +95,25 @@ app.get('/api/proposed', async (req, res) => {
         if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
         const response = await fetch(url, { headers, agent });
         const body = await response.text();
-        if (!response.ok) {
-            console.error(`[proposed] ${response.status} ${url} - ${body.slice(0,100)}`);
-            const code = response.status === 403 ? 502 : response.status;
-            return res.status(code).json({ error: `GitHub ${response.status}` });
+        if (response.status !== 200) {
+            const note = body.slice(0, 100);
+            console.error(`[proposed] ${response.status} ${url} - ${note}`);
+            return res.status(502).json({ error: 'Upstream GitHub error', status: response.status, note });
         }
         const pulls = JSON.parse(body);
+        const link = response.headers.get('link');
+        let totalApprox;
+        if (link) {
+            const match = link.match(/&page=(\d+)>; rel="last"/);
+            if (match) totalApprox = parseInt(match[1], 10) * limit;
+        }
         const payload = { items: pulls, limit, offset };
+        if (totalApprox) payload.totalApprox = totalApprox;
         setCached(cacheKey, payload);
         res.json(payload);
     } catch (error) {
         console.error(`[proposed] fetch failed ${url} - ${error.message}`);
-        res.status(502).json({ error: 'Failed to fetch Proposed lore' });
+        res.status(502).json({ error: 'Upstream GitHub error', status: 500, note: error.message });
     }
 });
 
@@ -110,16 +128,16 @@ app.get('/api/pulls/:number/files', async (req, res) => {
         if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
         const response = await fetch(url, { headers, agent });
         const body = await response.text();
-        if (!response.ok) {
-            console.error(`[pull-files] ${response.status} ${url} - ${body.slice(0,100)}`);
-            const code = response.status === 403 ? 502 : response.status;
-            return res.status(code).json({ error: `GitHub ${response.status}` });
+        if (response.status !== 200) {
+            const note = body.slice(0, 100);
+            console.error(`[pull-files] ${response.status} ${url} - ${note}`);
+            return res.status(502).json({ error: 'Upstream GitHub error', status: response.status, note });
         }
         const files = JSON.parse(body);
         res.json(files);
     } catch (error) {
         console.error(`[pull-files] fetch failed ${url} - ${error.message}`);
-        res.status(502).json({ error: `Error fetching files for PR #${number}` });
+        res.status(502).json({ error: 'Upstream GitHub error', status: 500, note: error.message });
     }
 });
 
@@ -133,17 +151,17 @@ app.get('/api/contents', async (req, res) => {
         if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
         const response = await fetch(url, { headers, agent });
         const body = await response.text();
-        if (!response.ok) {
-            console.error(`[contents] ${response.status} ${url} - ${body.slice(0,100)}`);
-            const code = response.status === 403 ? 502 : response.status;
-            return res.status(code).json({ error: `GitHub ${response.status}` });
+        if (response.status !== 200) {
+            const note = body.slice(0, 100);
+            console.error(`[contents] ${response.status} ${url} - ${note}`);
+            return res.status(502).json({ error: 'Upstream GitHub error', status: response.status, note });
         }
         const json = JSON.parse(body);
         const content = Buffer.from(json.content || '', 'base64').toString('utf-8');
         res.send(content);
     } catch (error) {
         console.error(`[contents] fetch failed ${url} - ${error.message}`);
-        res.status(502).json({ error: 'Error fetching content' });
+        res.status(502).json({ error: 'Upstream GitHub error', status: 500, note: error.message });
     }
 });
 
