@@ -16,6 +16,20 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 const agent = proxy ? new HttpsProxyAgent(proxy) : undefined;
 
+const cache = new Map();
+const CACHE_TTL = 1000 * 60 * 5;
+
+function getCached(key) {
+    const item = cache.get(key);
+    if (item && item.expire > Date.now()) return item.data;
+    cache.delete(key);
+    return null;
+}
+
+function setCached(key, data) {
+    cache.set(key, { data, expire: Date.now() + CACHE_TTL });
+}
+
 // Parse JSON bodies for GraphQL proxy requests
 app.use(express.json());
 
@@ -25,71 +39,87 @@ app.use(express.static('public'));
 // === API Routes ===
 
 app.get('/api/canon', async (req, res) => {
-    try {
-        const headers = {
-            'Accept': 'application/vnd.github.raw',
-            'User-Agent': 'Alien-Worlds-Lore-App'
-        };
+    const cacheKey = 'canon';
+    const cached = getCached(cacheKey);
+    if (cached) return res.type('text/markdown').send(cached);
 
-        if (GITHUB_TOKEN) {
-            headers['Authorization'] = `token ${GITHUB_TOKEN}`;
-        }
-
-        const response = await fetch('https://api.github.com/repos/Alien-Worlds/the-lore/contents/README.md?ref=main', {
-            headers,
-            agent
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const text = await response.text();
-        res.type('text/markdown').send(text);
-    } catch (error) {
-        console.error('Error fetching Canon lore:', error);
-        res.status(500).send('Error fetching Canon lore');
-    }
-});
-
-app.get('/api/proposed', async (req, res) => {
+    const url = 'https://api.github.com/repos/Alien-Worlds/the-lore/contents/README.md?ref=main';
     try {
         const headers = {
             'Accept': 'application/vnd.github+json',
             'User-Agent': 'Alien-Worlds-Lore-App'
         };
-        if (GITHUB_TOKEN) {
-            headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+        if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+
+        const response = await fetch(url, { headers, agent });
+        const body = await response.text();
+        if (!response.ok) {
+            console.error(`[canon] ${response.status} ${url} - ${body.slice(0,100)}`);
+            const code = response.status === 403 ? 502 : response.status;
+            return res.status(code).json({ error: `GitHub ${response.status}` });
         }
-        const response = await fetch('https://api.github.com/repos/Alien-Worlds/the-lore/pulls?state=open&ref=main', {
-            headers,
-            agent
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const pulls = await response.json();
-        res.json(pulls);
+        const json = JSON.parse(body);
+        const content = Buffer.from(json.content || '', 'base64').toString('utf-8');
+        setCached(cacheKey, content);
+        res.type('text/markdown').send(content);
     } catch (error) {
-        console.error('Error fetching Proposed lore:', error);
-        res.status(500).send('Error fetching Proposed lore');
+        console.error(`[canon] fetch failed ${url} - ${error.message}`);
+        res.status(502).json({ error: 'Failed to fetch Canon lore' });
+    }
+});
+
+app.get('/api/proposed', async (req, res) => {
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
+    const offset = parseInt(req.query.offset, 10) || 0;
+    const page = Math.floor(offset / limit) + 1;
+    const url = `https://api.github.com/repos/Alien-Worlds/the-lore/pulls?state=open&per_page=${limit}&page=${page}`;
+    const cacheKey = `/api/proposed?limit=${limit}&offset=${offset}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
+    try {
+        const headers = {
+            'Accept': 'application/vnd.github+json',
+            'User-Agent': 'Alien-Worlds-Lore-App'
+        };
+        if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+        const response = await fetch(url, { headers, agent });
+        const body = await response.text();
+        if (!response.ok) {
+            console.error(`[proposed] ${response.status} ${url} - ${body.slice(0,100)}`);
+            const code = response.status === 403 ? 502 : response.status;
+            return res.status(code).json({ error: `GitHub ${response.status}` });
+        }
+        const pulls = JSON.parse(body);
+        const payload = { items: pulls, limit, offset };
+        setCached(cacheKey, payload);
+        res.json(payload);
+    } catch (error) {
+        console.error(`[proposed] fetch failed ${url} - ${error.message}`);
+        res.status(502).json({ error: 'Failed to fetch Proposed lore' });
     }
 });
 
 app.get('/api/pulls/:number/files', async (req, res) => {
     const { number } = req.params;
+    const url = `https://api.github.com/repos/Alien-Worlds/the-lore/pulls/${number}/files`;
     try {
         const headers = {
             'Accept': 'application/vnd.github+json',
             'User-Agent': 'Alien-Worlds-Lore-App'
         };
-        if (GITHUB_TOKEN) {
-            headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+        if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+        const response = await fetch(url, { headers, agent });
+        const body = await response.text();
+        if (!response.ok) {
+            console.error(`[pull-files] ${response.status} ${url} - ${body.slice(0,100)}`);
+            const code = response.status === 403 ? 502 : response.status;
+            return res.status(code).json({ error: `GitHub ${response.status}` });
         }
-        const response = await fetch(`https://api.github.com/repos/Alien-Worlds/the-lore/pulls/${number}/files`, {
-            headers,
-            agent
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const files = await response.json();
+        const files = JSON.parse(body);
         res.json(files);
     } catch (error) {
-        console.error(`Error fetching files for PR #${number}:`, error);
-        res.status(500).send(`Error fetching files for PR #${number}`);
+        console.error(`[pull-files] fetch failed ${url} - ${error.message}`);
+        res.status(502).json({ error: `Error fetching files for PR #${number}` });
     }
 });
 
@@ -97,22 +127,23 @@ app.get('/api/contents', async (req, res) => {
     const { url } = req.query;
     try {
         const headers = {
-            'Accept': 'application/vnd.github.raw+json',
+            'Accept': 'application/vnd.github+json',
             'User-Agent': 'Alien-Worlds-Lore-App'
         };
-        if (GITHUB_TOKEN) {
-            headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+        if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+        const response = await fetch(url, { headers, agent });
+        const body = await response.text();
+        if (!response.ok) {
+            console.error(`[contents] ${response.status} ${url} - ${body.slice(0,100)}`);
+            const code = response.status === 403 ? 502 : response.status;
+            return res.status(code).json({ error: `GitHub ${response.status}` });
         }
-        const response = await fetch(url, {
-            headers,
-            agent
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const content = await response.text();
+        const json = JSON.parse(body);
+        const content = Buffer.from(json.content || '', 'base64').toString('utf-8');
         res.send(content);
     } catch (error) {
-        console.error('Error fetching content:', error);
-        res.status(500).send('Error fetching content');
+        console.error(`[contents] fetch failed ${url} - ${error.message}`);
+        res.status(502).json({ error: 'Error fetching content' });
     }
 });
 
@@ -134,6 +165,10 @@ app.post('/api/graphql', async (req, res) => {
         console.error('Error proxying GraphQL:', error);
         res.status(500).send('Error fetching GraphQL data');
     }
+});
+
+app.get('/api/health', (req, res) => {
+    res.json({ ok: true, time: Date.now() });
 });
 
 // SPA fallback — always serve index.html
