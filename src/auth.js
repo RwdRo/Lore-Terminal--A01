@@ -69,7 +69,7 @@ export function isLoggedIn() {
 export async function login(options = {}) {
     try {
         const kit = getKit();
-        const result = await kit.login({ chain: CHAIN });
+        const result = await kit.login({ chainId: CHAIN.id });
         if (!result || !result.session) {
             throw new Error('Login failed: No session returned.');
         }
@@ -113,7 +113,7 @@ export async function logout() {
 export async function restoreSession() {
     const kit = getKit();
     try {
-        const result = await kit.restore({ chain: CHAIN });
+        const result = await kit.restore({ chainId: CHAIN.id });
         if (result?.session?.actor) {
             session = result.session;
             const wallet = session.actor.toString();

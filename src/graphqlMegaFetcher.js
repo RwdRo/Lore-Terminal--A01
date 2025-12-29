@@ -1,5 +1,4 @@
-// GraphQL endpoint routed through Vite dev proxy
-export const API_URL = '/aw-graphql';
+export const API_URL = '/api/graphql';
 
 // === CACHING UTILITIES ===
 function getCacheKey(query, variables) {
