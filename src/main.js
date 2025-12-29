@@ -1,7 +1,7 @@
 // main.js
-import { Library } from './library.js'
-import { Profile } from './profile.js'
-import { Maps } from './maps.js'
+import { Library } from './library.js';
+import { Profile } from './profile.js';
+import { Maps } from './maps.js';
 import { saveBookmark, loadBookmark } from './bookmarks.js';
 import { Sidebar } from './components/Sidebar.js';
 import { getState, subscribe, setActivePanel } from './state.js';
@@ -26,13 +26,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function waitForTerminalAndStart() {
-  // ... (boot sequence code remains the same)
+  // This function can be simplified if the boot sequence is not needed.
+  initTerminal();
 }
 
-// ... (boot sequence and helper functions remain the same)
+function updateLoginUI() {
+    getAuth().then(auth => {
+        const session = auth.getSession();
+        const connectBtn = document.getElementById("connectWalletBtn");
+        if (connectBtn) {
+            connectBtn.textContent = session ? `🔓 ${session.actor}` : '🔐 Connect Wallet';
+        }
+    });
+}
 
 async function initTerminal() {
-  getAuth().then(m => m.restoreSession());
+  getAuth().then(async (m) => {
+    await m.restore();
+    updateLoginUI();
+    if (m.getSession()) {
+        profile.init();
+    }
+  });
   loadBookmark();
 
   const sidebarButtons = [
@@ -50,14 +65,17 @@ async function initTerminal() {
   const connectBtn = document.getElementById("connectWalletBtn");
   if (connectBtn) {
     connectBtn.addEventListener("click", async () => {
-      const { login, logout, isLoggedIn } = await getAuth();
-      if (isLoggedIn()) {
-        await logout();
+      const auth = await getAuth();
+      const session = auth.getSession();
+      if (session) {
+        await auth.logout();
       } else {
         try {
-          await login();
+          await auth.login();
+          profile.init(); // Refresh profile data after login
         } catch(e){ console.error(e); }
       }
+      updateLoginUI();
     });
   }
 
@@ -122,5 +140,3 @@ function switchPanel(panelId) {
       nav.innerHTML = '';
   }
 }
-
-// ... (rest of the file remains the same)
