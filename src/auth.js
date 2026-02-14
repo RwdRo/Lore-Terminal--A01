@@ -2,10 +2,11 @@ import { SessionKit, Session } from '@wharfkit/session'
 import { WalletPluginCloudWallet } from '@wharfkit/wallet-plugin-cloudwallet'
 import { TransactPluginResourceProvider } from "@wharfkit/transact-plugin-resource-provider";
 import { SimpleUI } from './simpleUI.js'
+import { appConfig } from './config.js'
 
 const CHAIN = {
-    id: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
-    url: 'https://wax.greymass.com'
+    id: appConfig.waxChainId,
+    url: appConfig.waxRpcEndpoints[0]
 }
 
 const sessionKit = new SessionKit({

@@ -21,18 +21,22 @@ npm install
 
 ## Linting and Tests
 
-There are currently no automated lint or test scripts. Please ensure code
-is formatted consistently and tested manually before submitting a pull request.
+Run `npm run lint` before submitting changes.
+
+Unit tests are currently limited; prioritize endpoint validation and manual verification for UI flows.
 
 ## Environment Configuration
 
 Create a `.env` file in the project root to override any defaults.
-Only `GITHUB_TOKEN` is required for full functionality. Example:
+`GITHUB_TOKEN` is strongly recommended to avoid GitHub API rate limits.
 
 ```ini
 PORT=5174
 GITHUB_TOKEN=ghp_your_token_here
 HTTPS_PROXY=http://proxy.example:8080
+WAX_RPC_ENDPOINTS=https://wax.greymass.com,https://wax.pink.gg,https://api.waxsweden.org
+AW_GRAPHQL_ENDPOINTS=https://api.alienworlds.io/graphql,https://graphql.mainnet.alienworlds.io/graphql
+DAO_GRAPHQL_ENDPOINTS=https://dao.alienworlds.io/graphql
 ```
 
 ## Folder Overview

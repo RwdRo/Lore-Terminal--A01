@@ -1,7 +1,4 @@
-// daoProposals.js
-// Fetch proposals from the Alien Worlds DAO GraphQL API
-
-const DAO_GRAPHQL_ENDPOINT = 'https://dao.alienworlds.io/graphql';
+const DAO_GRAPHQL_ENDPOINT = '/api/dao/graphql';
 
 export async function fetchDaoProposals() {
   const query = `
@@ -19,7 +16,7 @@ export async function fetchDaoProposals() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      Accept: 'application/json'
     },
     body: JSON.stringify({ query })
   });
@@ -33,7 +30,7 @@ export async function fetchDaoProposals() {
   const json = JSON.parse(text);
 
   if (json.errors) {
-    const message = json.errors.map(e => e.message).join(', ');
+    const message = json.errors.map((e) => e.message).join(', ');
     throw new Error(message);
   }
 

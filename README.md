@@ -34,6 +34,9 @@ The server reads several variables from the environment:
 - `PORT` – Port to run the Express server (defaults to `5174`).
 - `GITHUB_TOKEN` – Personal token used to fetch lore from GitHub.
 - `HTTPS_PROXY` – Optional proxy URL if outbound HTTPS requires it.
+- `WAX_RPC_ENDPOINTS` – Comma-separated WAX RPC endpoints (used with failover).
+- `AW_GRAPHQL_ENDPOINTS` – Comma-separated Alien Worlds GraphQL endpoints (used with failover).
+- `DAO_GRAPHQL_ENDPOINTS` – Comma-separated DAO GraphQL endpoints (used with failover).
 
 ## Development
 

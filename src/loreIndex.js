@@ -1,134 +1,193 @@
-// loreIndex.js
+const STOP_WORDS = new Set([
+  'the',
+  'a',
+  'an',
+  'and',
+  'or',
+  'but',
+  'in',
+  'on',
+  'at',
+  'to',
+  'for',
+  'of',
+  'with',
+  'by',
+  'this',
+  'that',
+  'these',
+  'those',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'has',
+  'have',
+  'had',
+  'they',
+  'them',
+  'from',
+  'into',
+  'about',
+  'their',
+  'there'
+]);
+
+function tokenize(text = '') {
+  return text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length > 2 && !STOP_WORDS.has(word));
+}
+
+function buildTagProfile(content, metadata = {}) {
+  const tokenCounts = new Map();
+  const metadataTokens = tokenize(`${metadata.title || ''} ${metadata.tags || ''}`);
+  const contentTokens = tokenize(content);
+
+  for (const token of [...metadataTokens, ...contentTokens]) {
+    tokenCounts.set(token, (tokenCounts.get(token) || 0) + 1);
+  }
+
+  const ranked = [...tokenCounts.entries()].sort((a, b) => b[1] - a[1]);
+  return {
+    tags: ranked.slice(0, 8).map(([token]) => token),
+    tokenCounts
+  };
+}
+
+function chunkContent(content, chunkSize = 700) {
+  const paragraphs = content.split('\n\n').filter(Boolean);
+  const chunks = [];
+  let currentChunk = [];
+  let currentLength = 0;
+
+  for (const paragraph of paragraphs) {
+    currentChunk.push(paragraph);
+    currentLength += paragraph.length;
+
+    if (currentLength >= chunkSize) {
+      chunks.push(currentChunk.join('\n\n'));
+      currentChunk = [];
+      currentLength = 0;
+    }
+  }
+
+  if (currentChunk.length) chunks.push(currentChunk.join('\n\n'));
+  return chunks.length ? chunks : [content];
+}
+
+function computeSimilarity(leftTokenCounts, rightTokenCounts) {
+  let sharedWeight = 0;
+  let leftWeight = 0;
+  let rightWeight = 0;
+
+  leftTokenCounts.forEach((count, token) => {
+    leftWeight += count;
+    if (rightTokenCounts.has(token)) {
+      sharedWeight += Math.min(count, rightTokenCounts.get(token));
+    }
+  });
+
+  rightTokenCounts.forEach((count) => {
+    rightWeight += count;
+  });
+
+  const denominator = Math.max(leftWeight, rightWeight, 1);
+  return sharedWeight / denominator;
+}
+
 export function indexLore(canonSections, proposedContents) {
-    const index = {};
+  const index = {};
 
-    // Index Canon Lore
-    canonSections.forEach((section, idx) => {
-        const sectionId = `canon-${idx}`;
-        const tags = extractTags(section.content, section.metadata);
-        index[sectionId] = {
-            ...section,
-            sectionId: sectionId,
-            source: 'canon',
-            tags: tags,
-            chunks: chunkContent(section.content)
-        };
+  canonSections.forEach((section, idx) => {
+    const sectionId = `canon-${idx}`;
+    const { tags, tokenCounts } = buildTagProfile(section.content, section.metadata);
+    index[sectionId] = {
+      ...section,
+      sectionId,
+      source: 'canon',
+      tags,
+      tokenCounts,
+      chunks: chunkContent(section.content)
+    };
+  });
+
+  proposedContents.forEach((proposal) => {
+    proposal.sections.forEach((section, sectionIdx) => {
+      const sectionId = `proposed-${proposal.prNumber}-${sectionIdx}`;
+      const { tags, tokenCounts } = buildTagProfile(section.content, section.metadata);
+      index[sectionId] = {
+        ...section,
+        sectionId,
+        source: `proposed-${proposal.prNumber}`,
+        tags,
+        tokenCounts,
+        chunks: chunkContent(section.content),
+        metadata: {
+          ...section.metadata,
+          prTitle: proposal.title,
+          prNumber: proposal.prNumber,
+          date: proposal.date
+        }
+      };
     });
+  });
 
-    // Index Proposed Lore
-    proposedContents.forEach((proposal, proposalIdx) => {
-        proposal.sections.forEach((section, sectionIdx) => {
-            const sectionId = `proposed-${proposal.prNumber}-${sectionIdx}`;
-            const tags = extractTags(section.content, section.metadata);
-            index[sectionId] = {
-                ...section,
-                sectionId: sectionId,
-                source: `proposed-${proposal.prNumber}`,
-                tags: tags,
-                chunks: chunkContent(section.content),
-                metadata: {
-                    ...section.metadata,
-                    prTitle: proposal.title,
-                    prNumber: proposal.prNumber,
-                    date: proposal.date
-                }
-            };
-        });
-    });
-
-    console.log('Indexed sections:', index);
-    console.log('Canon sections:', Object.keys(index).filter(id => index[id].source === 'canon'));
-    console.log('Proposed sections:', Object.keys(index).filter(id => index[id].source.startsWith('proposed-')));
-
-    return index;
+  return index;
 }
 
 export function extractTags(content, metadata = {}) {
-    const stopWords = new Set([
-        'the','a','an','and','or','but','in','on','at','to','for','of','with','by',
-        'this','that','these','those','is','are','was','were','be','has','have','had','they','them'
-    ]);
-
-    const tagSet = new Set();
-
-    if (metadata.tags) {
-        const parts = String(metadata.tags)
-            .split(/[,;]+/)
-            .map(t => t.trim().toLowerCase())
-            .filter(t => t && !stopWords.has(t));
-        parts.forEach(t => tagSet.add(t));
-    }
-
-    content
-        .toLowerCase()
-        .split(/\W+/)
-        .forEach(word => {
-            if (word.length > 3 && !stopWords.has(word)) tagSet.add(word);
-        });
-
-    return Array.from(tagSet).slice(0, 5);
-}
-
-function chunkContent(content) {
-    const paragraphs = content.split('\n\n');
-    const chunks = [];
-    let currentChunk = [];
-
-    for (const paragraph of paragraphs) {
-        currentChunk.push(paragraph);
-        if (currentChunk.join('\n\n').length > 500) {
-            chunks.push(currentChunk.join('\n\n'));
-            currentChunk = [];
-        }
-    }
-
-    if (currentChunk.length) {
-        chunks.push(currentChunk.join('\n\n'));
-    }
-
-    return chunks.length > 0 ? chunks : [content];
+  return buildTagProfile(content, metadata).tags;
 }
 
 export function searchLore(index, query, selectedTag) {
-    if (!query && !selectedTag) return index;
+  if (!query && !selectedTag) return index;
 
-    const results = {};
-    const queryLower = query ? query.toLowerCase() : '';
+  const results = {};
+  const queryTokens = tokenize(query || '');
 
-    for (const sectionId in index) {
-        const section = index[sectionId];
-        const matchesQuery = queryLower ? section.title.toLowerCase().includes(queryLower) || section.content.toLowerCase().includes(queryLower) : true;
-        const matchesTag = selectedTag ? section.tags.includes(selectedTag) : true;
+  for (const sectionId in index) {
+    const section = index[sectionId];
+    const sectionText = `${section.title || ''} ${section.content || ''}`.toLowerCase();
 
-        if (matchesQuery && matchesTag) {
-            results[sectionId] = section;
-        }
+    const matchesQuery =
+      queryTokens.length === 0 || queryTokens.every((token) => sectionText.includes(token));
+    const matchesTag = selectedTag ? section.tags.includes(selectedTag.toLowerCase()) : true;
+
+    if (matchesQuery && matchesTag) {
+      results[sectionId] = section;
     }
+  }
 
-    return results;
+  return results;
 }
 
 export function findRelatedSections(sectionId, index) {
-    const section = index[sectionId];
-    if (!section) return [];
+  const section = index[sectionId];
+  if (!section) return [];
 
-    const related = [];
-    const sectionTags = new Set(section.tags);
+  const related = [];
 
-    for (const otherSectionId in index) {
-        if (otherSectionId === sectionId) continue;
-        const otherSection = index[otherSectionId];
-        const otherTags = new Set(otherSection.tags);
-        const sharedTags = [...sectionTags].filter(tag => otherTags.has(tag));
-        if (sharedTags.length > 0) {
-            related.push({
-                sectionId: otherSectionId,
-                title: otherSection.title,
-                source: otherSection.source,
-                sharedTags: sharedTags
-            });
-        }
-    }
+  for (const otherSectionId in index) {
+    if (otherSectionId === sectionId) continue;
+    const otherSection = index[otherSectionId];
 
-    return related.sort((a, b) => b.sharedTags.length - a.sharedTags.length).slice(0, 5);
+    const sharedTags = section.tags.filter((tag) => otherSection.tags.includes(tag));
+    if (!sharedTags.length) continue;
+
+    const similarity = computeSimilarity(section.tokenCounts, otherSection.tokenCounts);
+    related.push({
+      sectionId: otherSectionId,
+      title: otherSection.title,
+      source: otherSection.source,
+      sharedTags,
+      similarity
+    });
+  }
+
+  return related
+    .sort((a, b) => b.similarity - a.similarity || b.sharedTags.length - a.sharedTags.length)
+    .slice(0, 8);
 }
