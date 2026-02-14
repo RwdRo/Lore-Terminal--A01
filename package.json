@@ -5,11 +5,12 @@
   "description": "A-01 Canon Terminal for Alien Worlds lore exploration",
   "main": "src/main.js",
   "scripts": {
-    "start": "PORT=5176 node server.js",
-    "dev": "concurrently \"npm:start\" \"vite\"",
+    "start": "npm run build && npm run api",
+    "dev": "concurrently \"npm run api\" \"vite\"",
     "build": "vite build",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "api": "PORT=5176 node server.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

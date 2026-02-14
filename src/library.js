@@ -43,17 +43,22 @@ export class Library {
             selectedTag: null,
             isTyping: false,
             showBookmarksOnly: false,
-            bookmarks: new Set()
+            bookmarks: new Set(),
+            comments: {}
         };
         this.sectionButtons = [];
         this.wallet = sessionStorage.getItem('WAX_WALLET');
         this.bookmarkKey = `A01_BOOKMARKS_${this.wallet || 'anon'}`;
+        this.commentKey = `A01_COMMENTS_${this.wallet || 'anon'}`;
         this.loadBookmarks();
+        this.loadComments();
         getAuth().then(({ onAuthChange }) => {
             onAuthChange(wallet => {
                 this.wallet = wallet;
                 this.setBookmarkKey(wallet);
                 this.loadBookmarks();
+                this.setCommentKey(wallet);
+                this.loadComments();
                 if (this.elements.bookmarkFilter) this.elements.bookmarkFilter.checked = false;
                 this.state.showBookmarksOnly = false;
                 this.renderLore();
@@ -65,6 +70,10 @@ export class Library {
         this.bookmarkKey = `A01_BOOKMARKS_${wallet || 'anon'}`;
     }
 
+    setCommentKey(wallet) {
+        this.commentKey = `A01_COMMENTS_${wallet || 'anon'}`;
+    }
+
     loadBookmarks() {
         const data = JSON.parse(localStorage.getItem(this.bookmarkKey) || '[]');
         this.state.bookmarks = new Set(data);
@@ -72,6 +81,14 @@ export class Library {
 
     saveBookmarks() {
         localStorage.setItem(this.bookmarkKey, JSON.stringify([...this.state.bookmarks]));
+    }
+
+    loadComments() {
+        this.state.comments = JSON.parse(localStorage.getItem(this.commentKey) || '{}');
+    }
+
+    saveComments() {
+        localStorage.setItem(this.commentKey, JSON.stringify(this.state.comments));
     }
 
     async init() {
@@ -87,7 +104,7 @@ export class Library {
 
             this.setupNavPanel();
             this.renderTagList();
-            await this.renderLore();
+            this.renderLore();
         } catch (error) {
             console.error('Library init error:', error);
             this.elements.loreContent.innerHTML = '<div class="error">Error loading lore. Please try again later.</div>';
@@ -359,10 +376,37 @@ export class Library {
             });
         }
 
+        const comments = this.state.comments[sectionId] || [];
         const commentDiv = document.createElement('div');
         commentDiv.className = 'comments-placeholder';
-        commentDiv.innerHTML = '<em>Comment threads coming soon...</em>';
+        commentDiv.innerHTML = `
+            <h4>Discussion (${comments.length})</h4>
+            <div class="comment-list">
+                ${comments.length ? comments.map(c => `<div class="comment-item"><strong>${escapeHtml(c.author)}</strong> · <span>${escapeHtml(c.date)}</span><p>${escapeHtml(c.text)}</p></div>`).join('') : '<em>No comments yet. Start the thread.</em>'}
+            </div>
+            <div class="comment-compose">
+                <textarea class="comment-input" placeholder="Leave a note on this lore entry..." ${this.wallet ? '' : 'disabled'}></textarea>
+                <button class="comment-submit" type="button" ${this.wallet ? '' : 'disabled'}>${this.wallet ? 'Post Comment' : 'Connect wallet to comment'}</button>
+            </div>
+        `;
         this.elements.loreContent.appendChild(commentDiv);
+
+        const submit = commentDiv.querySelector('.comment-submit');
+        const input = commentDiv.querySelector('.comment-input');
+        if (submit && input && this.wallet) {
+            submit.addEventListener('click', () => {
+                const text = input.value.trim();
+                if (!text) return;
+                const nextComments = [...(this.state.comments[sectionId] || []), {
+                    author: this.wallet,
+                    date: new Date().toLocaleDateString(),
+                    text
+                }];
+                this.state.comments[sectionId] = nextComments;
+                this.saveComments();
+                this.renderLore();
+            });
+        }
 
         navDiv.querySelector('.prev-btn').addEventListener('click', () => this.showPreviousChunk());
         navDiv.querySelector('.next-btn').addEventListener('click', () => this.showNextChunk());
@@ -447,6 +491,8 @@ export class Library {
         }
         this.state.currentChunkIndex = 0;
         this.state.selectedTag = null;
+        this.state.showBookmarksOnly = false;
+        if (this.elements.bookmarkFilter) this.elements.bookmarkFilter.checked = false;
 
         this.handleSearch();
         this.updateNavPanel(document.querySelector('#loreNav'));
@@ -549,6 +595,16 @@ export class Library {
                 break;
         }
     }
+}
+
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
 function debounce(func, wait) {

@@ -15,22 +15,25 @@ export class Maps {
       const stats = await fetchPlanetDetails();
       stats.forEach(p => {
         if (PLANET_DATA[p.name]) {
-          PLANET_DATA[p.name].stats = { population: p.population, reward_pool: p.reward_pool, active_users: p.active_users };
+          PLANET_DATA[p.name].stats = {
+            population: p.population,
+            reward_pool: p.reward_pool,
+            active_users: p.active_users
+          };
         }
       });
-    } catch(e) {
-      console.error("Planet stats", e);
+    } catch (e) {
+      console.error('Planet stats', e);
     }
     this.renderSpaceView();
   }
 
-  // === SPACE VIEW WITH PLANETS IN ORBIT ===
   renderSpaceView() {
     const viewWidth = 960;
     const viewHeight = 600;
     this.container.innerHTML = `
       <div id="spaceView" class="map-space" style="width:${viewWidth}px;height:${viewHeight}px;">
-        <img src="/assets/orbit-bg.png" alt="Orbit Background" class="orbit-bg" />
+        <div class="orbit-bg" aria-hidden="true"></div>
         ${this.renderPlanets()}
         <div id="planetTooltip" class="planet-tooltip" hidden></div>
       </div>
@@ -47,18 +50,20 @@ export class Maps {
   }
 
   renderPlanets() {
-    return Object.entries(PLANET_DATA).map(([name, data]) => {
-      const [x, y] = data.orbitCoords;
-      return `
-        <div 
-          class="planet-icon" 
-          data-planet="${name}" 
-          style="left:${x}px; top:${y}px;"
-        >
-          <img src="/assets/planet-${name.toLowerCase()}.png" alt="${name}" />
-        </div>
-      `;
-    }).join('');
+    return Object.entries(PLANET_DATA)
+      .map(([name, data]) => {
+        const [x, y] = data.orbitCoords;
+        return `
+          <div
+            class="planet-icon"
+            data-planet="${name}"
+            style="left:${x}px; top:${y}px;"
+          >
+            <img src="/assets/planet-${name.toLowerCase()}.png" alt="${name}" />
+          </div>
+        `;
+      })
+      .join('');
   }
 
   attachPlanetEvents() {
@@ -86,10 +91,11 @@ export class Maps {
     });
   }
 
-  // === INDIVIDUAL PLANET DETAIL PANEL ===
   renderPlanetDetail(name) {
     this.state.currentPlanet = name;
-    const p = PLANET_DATA[name].details;
+    const record = PLANET_DATA[name];
+    const p = record.details;
+    const stats = record.stats || {};
 
     this.container.innerHTML = `
       <div class="planet-detail">
@@ -109,9 +115,9 @@ export class Maps {
               <tr><td>Atmosphere:</td><td>${p.atmosphere}</td></tr>
               <tr><td>Resources:</td><td>${p.resources}</td></tr>
               <tr><td>Unique:</td><td>${p.unique}</td></tr>
-              <tr><td>Population:</td><td>${p.stats?.population ?? "N/A"}</td></tr>
-              <tr><td>Reward Pool:</td><td>${p.stats?.reward_pool ?? "N/A"}</td></tr>
-              <tr><td>Active Users:</td><td>${p.stats?.active_users ?? "N/A"}</td></tr>
+              <tr><td>Population:</td><td>${stats.population ?? 'N/A'}</td></tr>
+              <tr><td>Reward Pool:</td><td>${stats.reward_pool ?? 'N/A'}</td></tr>
+              <tr><td>Active Users:</td><td>${stats.active_users ?? 'N/A'}</td></tr>
             </table>
 
             <div class="planet-actions">
@@ -122,7 +128,7 @@ export class Maps {
       </div>
     `;
 
-    document.querySelector('.return-btn').addEventListener('click', () => {
+    this.container.querySelector('.return-btn').addEventListener('click', () => {
       this.renderSpaceView();
     });
   }

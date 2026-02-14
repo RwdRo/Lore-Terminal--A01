@@ -5,6 +5,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,8 +45,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static frontend (from Vite build output or raw public)
-app.use(express.static('public'));
+// Serve static frontend (prefer Vite build output)
+const distDir = path.resolve(__dirname, 'dist');
+const publicDir = path.resolve(__dirname, 'public');
+const staticDir = fs.existsSync(path.join(distDir, 'index.html')) ? distDir : publicDir;
+app.use(express.static(staticDir));
 
 // === API Routes ===
 
@@ -191,7 +195,7 @@ app.get('/api/health', (req, res) => {
 
 // SPA fallback — always serve index.html
 app.use((req, res) => {
-    res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(staticDir, 'index.html'));
 });
 
 app.listen(PORT, () => {

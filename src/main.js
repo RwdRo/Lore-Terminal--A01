@@ -2,7 +2,7 @@
 import { Library } from './library.js';
 import { Profile } from './profile.js';
 import { Maps } from './maps.js';
-import { saveBookmark, loadBookmark } from './bookmarks.js';
+import { loadBookmark } from './bookmarks.js';
 import { Sidebar } from './components/Sidebar.js';
 import { getState, subscribe, setActivePanel } from './state.js';
 
@@ -26,29 +26,68 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function waitForTerminalAndStart() {
-  // This function can be simplified if the boot sequence is not needed.
-  initTerminal();
+  initStarfield();
+  await runBootSequence();
+  await initTerminal();
+}
+
+function initStarfield(count = 120) {
+  const starfield = document.getElementById('starfield');
+  if (!starfield) return;
+  starfield.innerHTML = '';
+  for (let i = 0; i < count; i += 1) {
+    const star = document.createElement('span');
+    star.className = 'star';
+    star.style.left = `${Math.random() * 100}%`;
+    star.style.top = `${Math.random() * 100}%`;
+    star.style.animationDelay = `${Math.random() * 4}s`;
+    star.style.animationDuration = `${1.8 + Math.random() * 3.2}s`;
+    starfield.appendChild(star);
+  }
+}
+
+async function runBootSequence() {
+  const boot = document.getElementById('bootSequence');
+  const terminal = document.getElementById('terminal');
+  if (!terminal) return;
+
+  await new Promise(resolve => setTimeout(resolve, 900));
+  terminal.style.opacity = '1';
+  if (boot) {
+    boot.style.opacity = '0';
+    boot.style.pointerEvents = 'none';
+    setTimeout(() => {
+      boot.style.display = 'none';
+      document.body.classList.remove('booting');
+    }, 550);
+  }
 }
 
 function updateLoginUI() {
-    getAuth().then(auth => {
-        const session = auth.getSession();
-        const connectBtn = document.getElementById("connectWalletBtn");
-        if (connectBtn) {
-            connectBtn.textContent = session ? `🔓 ${session.actor}` : '🔐 Connect Wallet';
-        }
-    });
+  getAuth().then(auth => {
+    const session = auth.getSession();
+    const connectBtn = document.getElementById('connectWalletBtn');
+    if (connectBtn) {
+      connectBtn.textContent = session ? `🔓 ${session.actor}` : '🔐 Connect Wallet';
+    }
+  });
 }
 
 async function initTerminal() {
-  getAuth().then(async (m) => {
-    await m.restore();
-    updateLoginUI();
-    if (m.getSession()) {
-        profile.init();
-    }
-  });
   loadBookmark();
+
+  library = new Library();
+  profile = new Profile();
+  maps = new Maps();
+  const { Formatter } = await import('./formatter.js');
+  formatter = new Formatter();
+
+  const auth = await getAuth();
+  await auth.restore();
+  updateLoginUI();
+  if (auth.getSession()) {
+    profile.init();
+  }
 
   const sidebarButtons = [
     { label: 'Library', target: 'content' },
@@ -62,34 +101,29 @@ async function initTerminal() {
   const sidebar = new Sidebar('mainNav', sidebarButtons);
   sidebar.init();
 
-  const connectBtn = document.getElementById("connectWalletBtn");
+  const connectBtn = document.getElementById('connectWalletBtn');
   if (connectBtn) {
-    connectBtn.addEventListener("click", async () => {
-      const auth = await getAuth();
+    connectBtn.addEventListener('click', async () => {
       const session = auth.getSession();
       if (session) {
         await auth.logout();
       } else {
         try {
           await auth.login();
-          profile.init(); // Refresh profile data after login
-        } catch(e){ console.error(e); }
+          profile.init();
+        } catch (e) {
+          console.error(e);
+        }
       }
       updateLoginUI();
     });
   }
 
-  library = new Library();
-  profile = new Profile();
-  maps = new Maps();
-  const { Formatter } = await import('./formatter.js');
-  formatter = new Formatter();
-
   library.init();
 
   subscribe(renderApp);
   setActivePanel('content');
-  renderApp(); // Initial render
+  renderApp();
 }
 
 function renderApp() {
@@ -125,10 +159,12 @@ function switchPanel(panelId) {
       break;
     case 'votes':
       rightbar.style.display = 'block';
-      import('./vote.js').then(m => {
-        m.renderVoteSidebar('loreNav');
-        m.initVotes();
-      }).catch(()=>{});
+      import('./vote.js')
+        .then(m => {
+          m.renderVoteSidebar('loreNav');
+          m.initVotes();
+        })
+        .catch(() => {});
       break;
     case 'formatter':
       rightbar.style.display = 'none';
