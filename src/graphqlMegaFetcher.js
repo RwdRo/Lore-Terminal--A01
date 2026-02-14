@@ -1,6 +1,5 @@
-export const API_URL = '/api/graphql';
+export const API_URL = '/api/aw/graphql';
 
-// === CACHING UTILITIES ===
 function getCacheKey(query, variables) {
   return `gql:${query}-${JSON.stringify(variables)}`;
 }
@@ -10,7 +9,7 @@ function loadCache(key) {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (Date.now() - parsed.timestamp > 60 * 60 * 1000) return null; // 1 hour expiry
+    if (Date.now() - parsed.timestamp > 60 * 60 * 1000) return null;
     return parsed.data;
   } catch {
     return null;
@@ -19,16 +18,18 @@ function loadCache(key) {
 
 function saveCache(key, data) {
   try {
-    localStorage.setItem(key, JSON.stringify({
-      timestamp: Date.now(),
-      data
-    }));
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        timestamp: Date.now(),
+        data
+      })
+    );
   } catch (e) {
     console.warn('[GraphQL] Cache save failed:', e);
   }
 }
 
-// === MAIN FETCHER ===
 async function graphqlRequest(query, variables = {}) {
   const key = getCacheKey(query, variables);
   const cached = loadCache(key);
@@ -47,7 +48,7 @@ async function graphqlRequest(query, variables = {}) {
     const contentType = response.headers.get('content-type') || '';
 
     if (response.status !== 200) {
-      throw new Error(`${API_URL} HTTP ${response.status}`);
+      throw new Error(`${API_URL} HTTP ${response.status} ${text.slice(0, 120)}`);
     }
 
     if (contentType.includes('text/html') || text.trim().startsWith('<')) {
@@ -62,13 +63,12 @@ async function graphqlRequest(query, variables = {}) {
     }
 
     if (json.errors) {
-      const message = json.errors.map(e => e.message).join(', ');
+      const message = json.errors.map((e) => e.message).join(', ');
       throw new Error(message);
     }
 
     saveCache(key, json.data);
     return json.data;
-
   } catch (err) {
     if (cached) return cached;
     console.error('[GraphQL] Request failed:', err);
@@ -76,7 +76,6 @@ async function graphqlRequest(query, variables = {}) {
   }
 }
 
-// === CUSTOM FETCHERS ===
 export async function fetchWalletDetails(account) {
   const query = `
     query($account:String!){
@@ -102,8 +101,7 @@ export async function fetchPlanetDetails() {
       }
     }`;
   const data = await graphqlRequest(query);
-  const planetDetails = data?.planet_details?.[0];
-  if (!planetDetails) throw new Error('No data received from planet_details');
+  if (!data?.planet_details?.length) throw new Error('No data received from planet_details');
   return data.planet_details;
 }
 
